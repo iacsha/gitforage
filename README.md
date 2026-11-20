@@ -4,7 +4,7 @@
 
 *A field guide to GitHub.* Live demo: **[gitforage.dev](https://gitforage.dev)**
 
-gitforage goes out each week and forages GitHub for projects worth your time, before the crowd finds them. You mark out your patch once in `interests.yml`, and it brings back four kinds of finds:
+gitforage goes out each week and forages GitHub for projects worth your time, including the young ones that trending lists overlook. You mark out your patch once in `interests.yml`, and it brings back four kinds of finds:
 
 1. **Seedlings:** new repos sprouting in your topics and keywords.
 2. **Thriving:** established repos in your patch that are suddenly growing fast.
