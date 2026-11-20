@@ -111,7 +111,7 @@ export function haulIssuePage(ctx: SiteContext, issues: HaulIssue[], i: number):
   const prev = issues[i - 1], next = issues[i + 1];
   const body = html`<p class="crumbs"><a href="${href("index.html")}">The Haul</a></p>
 <h1>${issueTitle(is.number)}</h1>
-<p class="run-line">Brought home the week of <time datetime="${is.week}">${fmtDate(`${is.week}T00:00:00Z`)}</time>. ${is.picks.length === 1 ? "One pick" : `${is.picks.length === 2 ? "Two" : "Three"} picks`}, best fit first.</p>
+<p class="run-line">Brought home <time datetime="${is.published}">${fmtDate(is.published)}</time>. ${is.picks.length === 1 ? "One pick" : `${is.picks.length === 2 ? "Two" : "Three"} picks`}, best fit first.</p>
 ${is.note ? html`<p class="lede haul-note">${is.note}</p>` : ""}
 <ol class="cards">
 ${is.picks.map((it, rank) => card(ctx, it, { health: false, found: is.published, rank }))}
@@ -121,7 +121,7 @@ ${is.picks.map((it, rank) => card(ctx, it, { health: false, found: is.published,
 }
 
 export function haulIndexPage(ctx: SiteContext, issues: HaulIssue[]): string {
-  const rows = [...issues].reverse().map((is) => html`<li><a href="${href(`${issueId(is.number)}.html`)}">No. ${issueId(is.number)}</a> <span class="arch-date">${fmtDate(`${is.week}T00:00:00Z`)}</span> <span class="muted">${is.picks.map((p) => p.full_name).join(", ")}</span></li>`);
+  const rows = [...issues].reverse().map((is) => html`<li><a href="${href(`${issueId(is.number)}.html`)}">No. ${issueId(is.number)}</a> <span class="arch-date">${fmtDate(is.published)}</span> <span class="muted">${is.picks.map((p) => p.full_name).join(", ")}</span></li>`);
   const body = html`<h1>The Haul</h1>
 <p class="lede">${HAUL_LEDE}</p>
 <p class="run-line">Follow it with the <a href="${href("feed.xml")}">Haul feed</a>, or see every walk in <a href="${href("../archive/index.html")}">the archive</a>.</p>
