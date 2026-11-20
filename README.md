@@ -1,13 +1,17 @@
+<p align="center"><img src="packages/site/design/logos/c-sprig.svg" width="96" height="96" alt="gitforage emblem: a berry sprig whose twig is the main line and whose berries are commits"></p>
+
 # gitforage
 
-gitforage finds GitHub projects you would care about before you hear of them. You describe your interests once in `interests.yml`, and it forages GitHub for:
+*A field guide to GitHub.* Live demo: **[gitforage.dev](https://gitforage.dev)**
 
-1. **New repos** in your topics and keywords.
-2. **Rising older repos:** established repos in your topics that are gaining stars fast right now.
-3. **Live forks** of projects you follow: forks that are ahead of upstream and recently pushed. This is how you find a revived fork of a dead project.
-4. **Kin of your stars:** repos that share the topics and words that are unusually common among your own stars.
+gitforage goes out each week and forages GitHub for projects worth your time, before the crowd finds them. You mark out your patch once in `interests.yml`, and it brings back four kinds of finds:
 
-Every candidate gets a fit score, and every score lists its reasons, so you can see why a repo is on the list ("3 of your topics, ~40 stars a month, top 10% in hl7, like your stars: hl7, mllp"). It ranks by fit to you, not by popularity, it remembers what it has already shown you, and your Keep and Skip marks move the ranking.
+1. **Seedlings:** new repos sprouting in your topics and keywords.
+2. **Thriving:** established repos in your patch that are suddenly growing fast.
+3. **Wild forks:** forks of projects you follow that are ahead of upstream and still being tended. This is how you find the living branch of a project whose upstream has gone quiet.
+4. **Kindred:** repos that share what is unusually common among your own stars.
+
+Every find comes with a field note and its reasons ("3 of your topics, ~40 stars a month, top 10% in hl7, like your stars: hl7, mllp"), so you can see why it made the haul. gitforage ranks by fit to you, not by popularity. It remembers what it has already shown you, and your Keep and Leave-it marks move the ranking.
 
 ## Status
 
