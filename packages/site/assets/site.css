@@ -491,6 +491,11 @@ h2 { font-size: 1.35rem; line-height: 1.25; margin: 2.25rem 0 0.5rem; }
 .meta { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; margin: 0; padding: 0; list-style: none; color: var(--muted); font-family: var(--mono); font-size: 0.78rem; }
 .health { margin: 0; font-size: 0.9rem; }
 .health-label { font-family: var(--mono); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-right: 0.35rem; color: var(--stamp); }
+/* Revival radar: parent and carrying fork on one card. */
+.revival-line { margin: 0; font-size: 0.92rem; overflow-wrap: anywhere; }
+.revival-line a { color: var(--text); }
+.revival-line .owner { color: var(--muted); }
+.revival-label { display: inline-block; min-width: 7.5rem; font-family: var(--mono); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--stamp); }
 
 .actions { display: flex; gap: 0.5rem; margin-top: auto; padding-top: 0.35rem; }
 .btn {

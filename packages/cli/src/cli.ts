@@ -9,7 +9,7 @@ import { dirname, join, resolve } from "node:path";
 import {
   ConfigError, GitHub, RateLimitError, forage, loadConfig, loadFeedback, loadSeen, loadStars, markSeen, saveSeen, saveStars,
   seenKeys, toJson, toMarkdown, toText, tokenFromEnv, withMode, MODES, type Config, type ForageResult, type Mode,
-  appendFeedback, catalogTopics, cleanText, loadCatalog, saveCatalog, selectCatalog, toCatalogItems, type CatalogState, intake, issuesFrom, isSafeFullName, isSafeLogin, isoDate, loadDigests, replyFor, saveDigest, toDigestItems, toRepo,
+  appendFeedback, loadRevival, saveRevival, revivalText, catalogTopics, cleanText, loadCatalog, saveCatalog, selectCatalog, toCatalogItems, type CatalogState, type RevivalItem, intake, issuesFrom, isSafeFullName, isSafeLogin, isoDate, loadDigests, replyFor, saveDigest, toDigestItems, toRepo,
 } from "@gitforage/core";
 import { renderSite, siteBinaries, writeSite } from "@gitforage/site";
 
@@ -178,6 +178,10 @@ export async function main(argv: string[], env = process.env): Promise<number> {
   const seen = args.cmd === "run" ? loadSeen(statePath) : null;
   const starsPath = join(dirname(statePath), "stars.json");
   const stars = loadStars(starsPath);
+  // The revival radar runs in discover mode only, so the two weekly runs do not pay for it twice.
+  const revivalPath = join(dirname(statePath), "revival.json");
+  const revivalState = cfg.revival.enabled && cfg.mode === "discover" ? loadRevival(revivalPath) : null;
+  if (revivalState?.problems.length) console.error(`warning: ${revivalState.problems.length} revival state problems, first: ${revivalState.problems[0]}`);
   const fb = loadFeedback(resolve(args.feedback ?? join(base, "feedback.yml")));
   for (const p of fb.problems) console.error(`warning: ${p}`);
   if (fb.marks.length) log(`feedback: ${fb.marks.length} marks`);
@@ -185,7 +189,7 @@ export async function main(argv: string[], env = process.env): Promise<number> {
   try {
     // The personalization catalog is built by `run` in discover mode only (the Discover page uses it).
     const catalog = args.cmd === "run" && cfg.mode === "discover" && cfg.site.personalize.enabled;
-    res = await forage(cfg, gh, { skip: seen ? seenKeys(seen) : undefined, log, stars, feedback: fb.marks, catalog });
+    res = await forage(cfg, gh, { skip: seen ? seenKeys(seen) : undefined, log, stars, feedback: fb.marks, catalog, revival: revivalState?.state ?? false });
   } catch (e) {
     if (e instanceof RateLimitError) { console.error(`gitforage: ${e.message}`); return 1; }
     throw e;
@@ -199,6 +203,7 @@ export async function main(argv: string[], env = process.env): Promise<number> {
   if (args.cmd === "preview") {
     if (args.out) { writeFileSync(args.out, rendered()); log(`wrote ${args.out}`); }
     else console.log(args.json ? JSON.stringify(toJson(items), null, 2) : toText(items) || "No candidates found.");
+    if (!args.json && res.revival?.length) console.log(`\n${revivalText(res.revival)}`);
   } else {
     if (args.out) writeFileSync(args.out, rendered());
     else process.stdout.write(rendered());
@@ -212,6 +217,10 @@ export async function main(argv: string[], env = process.env): Promise<number> {
       const sel = selectCatalog(toCatalogItems(res.catalog, cfg, now.getTime()), catalogTopics(cfg), cfg.site.personalize.per_topic);
       saveCatalog(join(dirname(statePath), "catalog.json"), { version: 1, generated_at: now.toISOString(), items: sel.items });
       log(`catalog: ${sel.items.length} of ${res.catalog.length} candidates kept (${sel.per_topic} per topic at most)`);
+    }
+    if (revivalState && res.revival) {
+      saveRevival(revivalPath, revivalState.state);
+      log(`revival: ${res.revival.length} revivals recorded in ${revivalPath}`);
     }
     log(`recorded ${items.length} items in ${statePath}${args.out ? `; wrote ${args.out}` : ""}`);
   }
@@ -232,7 +241,13 @@ function site(args: Args, cfg: Config, base: string, log: (m: string) => void): 
     if (loaded.problems.length) console.error(`warning: ${loaded.problems.length} catalog problems, first: ${loaded.problems[0]}`);
     catalog = loaded.catalog;
   }
-  const files = renderSite(cfg, digests, { repo: args.repo ?? null, catalog });
+  let revival: RevivalItem[] | null = null;
+  if (cfg.revival.enabled) {
+    const loaded = loadRevival(join(stateDir(args, base), "revival.json"));
+    if (loaded.problems.length) console.error(`warning: ${loaded.problems.length} revival problems, first: ${loaded.problems[0]}`);
+    revival = loaded.state.items;
+  }
+  const files = renderSite(cfg, digests, { repo: args.repo ?? null, catalog, revival });
   const n = writeSite(args.out, new Map<string, string | Uint8Array>([...files, ...siteBinaries()]));
   log(`site: ${digests.length} digests, wrote ${n} files to ${args.out}`);
   return 0;

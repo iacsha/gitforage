@@ -35,6 +35,14 @@ export const STRINGS = Object.freeze({
   discoverLede: "Useful tools that fit these interests, ranked by fit rather than popularity. Every card says why it made the basket.",
   contributeTitle: "Lend a hand",
   contributeNav: "Get involved",
+  revivalNav: "Revivals",
+  revivalTitle: "Revival radar",
+  revivalLede: "Projects whose parent has gone quiet or been archived, carried on by a fork with commits of its own, recent growth and a following.",
+  revivalEmpty: "No revivals spotted yet. The weekly walk checks a few quiet parents each time.",
+  revivalParent: "Parent",
+  revivalCarried: "Carried on by",
+  revivalPointsHere: "Upstream points here",
+  revivalPointsHereTitle: "The parent's own homepage or description names this fork as its new home",
   contributeLede: "Projects worth tending: maintainers who merge outside pull requests and answer issues, starter issues, and wild forks ahead of upstream.",
   topicsNav: "Topics",
   topicsTitle: "Patches",
@@ -109,4 +117,26 @@ export const FIELD_NOTE = Object.freeze({
   prs: "pull requests",
   answers: "They answered {a} of {t} recent issues.",
   growth: GROWTH_WORDS,
+});
+
+/**
+ * The field note on a revival card (render.ts revivalNote), built only from validated
+ * numbers, booleans and an allow-listed topic, never from either repo's text.
+ * Placeholders: {where} {Where} {state} {n} {commits} {when}.
+ */
+export const REVIVAL_NOTE = Object.freeze({
+  openers: Object.freeze([
+    "An old stem {where}, {state}; a cutting took root and carries the line on.",
+    "{Where}, the parent plant is {state}, but a wild fork kept growing.",
+    "The parent {where} is {state}. This cutting did not stop.",
+  ]),
+  archived: "archived",
+  dormant: "dormant for over a year",
+  dormantYears: "dormant for {n} years",
+  ahead: "It has grown {n} {commits} past its parent and was last tended {when}.",
+  commit: "commit",
+  commits: "commits",
+  when: Object.freeze(["this week", "this month", "this season", "within six months"]),
+  release: "It still sets seed: a release in the last 90 days.",
+  pointsHere: "The parent's own label points here.",
 });
