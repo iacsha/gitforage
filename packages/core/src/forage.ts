@@ -20,6 +20,7 @@ import type { Scored } from "./types.ts";
 import { detectLanguage } from "./language.ts";
 import { starFarmCheck, starFarmText } from "./starfarm.ts";
 import { catalogConfig, catalogTopics, isDefaultCandidate } from "./catalog.ts";
+import { emptyRevival, revivalSource, type RevivalItem, type RevivalState } from "./revival.ts";
 
 /** Candidates with fewer stars are not worth a contributors call for the star-farm guard. */
 const FARM_CHECK_MIN_STARS = 2000;
@@ -41,6 +42,11 @@ export interface ForageOptions {
    * candidate scored for the catalog. The default digest is unchanged by it.
    */
   catalog?: boolean;
+  /**
+   * The revival radar's state (state/revival.json), read for recent checks and updated
+   * in place. false skips the radar for this run even when revival.enabled is set.
+   */
+  revival?: RevivalState | false;
 }
 
 export interface ForageResult {
@@ -54,6 +60,8 @@ export interface ForageResult {
   profile: ProfileTerm[];
   /** With `catalog`: every eligible candidate (seen or not), scored with the catalog topics. */
   catalog: Scored[] | null;
+  /** Revival radar: dormant upstreams in your topics and the live fork carrying each. Null when it did not run. */
+  revival: RevivalItem[] | null;
 }
 
 /** Most seeds whose README is read for the profile. */
@@ -128,6 +136,17 @@ export async function forage(cfg: Config, gh: GitHub, opts: ForageOptions = {}):
   await step("rising", () => risingSource(gh, cfg, pool, observations, now, observed, extra));
   await step("fork", () => forkSource(gh, cfg, pool, seeds, now));
   await step("kin", () => kinSource(gh, cfg, pool, profile, now));
+  let revival: RevivalItem[] | null = null;
+  if (cfg.revival.enabled && opts.revival !== false) {
+    const state = opts.revival ?? emptyRevival();
+    await step("revival", async () => {
+      const r = await revivalSource(gh, cfg, state, now);
+      warnings.push(...r.warnings);
+      log(`revival: ${r.examined} upstreams examined, ${r.reused} from state, ${r.calls} of ${r.budget} calls`);
+      revival = r.items;
+      return r.items.length;
+    });
+  }
   for (const c of pool.items.values()) {
     const a = affinityOf(c.repo, profile);
     if (a.fit > 0) c.affinity = a;
@@ -191,7 +210,7 @@ export async function forage(cfg: Config, gh: GitHub, opts: ForageOptions = {}):
   rank(kept);
 
   const catalog = opts.catalog ? scoreCatalog(eligible, cfg, nudges, now) : null;
-  return { ranked: kept, excluded, skipped_seen, warnings, found, profile: profile.terms.slice(0, 30), catalog };
+  return { ranked: kept, excluded, skipped_seen, warnings, found, profile: profile.terms.slice(0, 30), catalog, revival };
 }
 
 /**
