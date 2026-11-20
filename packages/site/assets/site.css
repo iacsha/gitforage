@@ -156,6 +156,41 @@ kbd {
 :root[data-theme="light"] .pref-btn .icon-light,
 :root[data-theme="dark"] .pref-btn .icon-dark { display: inline; }
 
+/* Density: a segmented radio group in the header. Icon-only on narrow screens; the
+   accessible name is the button's aria-label either way. */
+.density {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+}
+.density-opt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-width: 2.25rem;
+  min-height: 2rem;
+  padding: 0.2rem 0.65rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+.density-opt:hover { color: var(--text); background: var(--chip-bg); }
+.density-opt[aria-checked="true"] { color: var(--on-accent); background: var(--accent); }
+.density-opt .icon { flex: none; }
+@media (max-width: 40rem) {
+  .density-text { display: none; }
+  .density-opt { padding: 0.2rem 0.5rem; }
+}
+
 /* Language choice: cards in other languages are hidden by default when the portal
    filters languages (data-lang-default="only"), so this works without JavaScript. */
 :root[data-lang-filter="only"] [data-lang-match="no"],
@@ -168,6 +203,99 @@ h2 { font-size: 1.25rem; margin: 2rem 0 0.5rem; }
 .run-line, .crumbs { color: var(--muted); font-size: 0.95rem; margin: 0 0 1.25rem; }
 .muted { color: var(--muted); }
 .empty { padding: 2rem 1rem; text-align: center; color: var(--muted); background: var(--surface); border: 1px dashed var(--border); border-radius: var(--radius); }
+
+/* The bar above each list: sort, the View menu, the count and the filter chips. */
+.view-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0 0 1rem;
+  padding: 0.7rem 0.9rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.view-row, .filter-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem; }
+.filter-group { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
+.view-label { color: var(--muted); font-size: 0.85rem; font-weight: 600; margin-right: 0.15rem; }
+.view-sort { display: inline-flex; align-items: center; gap: 0.45rem; }
+.view-sort select, .view-menu summary {
+  min-height: 2.25rem;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+.view-sort select { padding-right: 0.5rem; cursor: pointer; }
+.view-sort select:hover, .view-menu summary:hover { border-color: var(--accent); }
+.view-menu { position: relative; }
+.view-menu summary { display: inline-flex; align-items: center; gap: 0.45rem; cursor: pointer; list-style: none; }
+.view-menu summary::-webkit-details-marker { display: none; }
+.view-menu summary::after {
+  content: "";
+  width: 0.45rem;
+  height: 0.45rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-0.1rem) rotate(45deg);
+}
+.view-menu[open] summary { border-color: var(--accent); }
+.view-menu[open] summary::after { transform: translateY(0.1rem) rotate(-135deg); }
+.view-fields {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  min-width: 13rem;
+  max-width: calc(100vw - 2rem);
+  margin: 0;
+  padding: 0.6rem 0.8rem 0.7rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+}
+.view-fields legend { float: left; width: 100%; padding: 0 0 0.3rem; color: var(--muted); font-size: 0.85rem; font-weight: 600; }
+.view-fields label { clear: both; display: flex; align-items: center; gap: 0.55rem; min-height: 2.25rem; font-size: 0.95rem; cursor: pointer; }
+.view-fields input { width: 1.05rem; height: 1.05rem; margin: 0; accent-color: var(--accent); }
+.view-count { margin: 0 0 0 auto; color: var(--muted); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2rem;
+  padding: 0.15rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+.filter-chip:hover { border-color: var(--accent); }
+.filter-chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
+.filter-chip[aria-pressed="true"]::before { content: "\2713"; font-weight: 700; }
+.filter-clear {
+  min-height: 2rem;
+  padding: 0.15rem 0.4rem;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  cursor: pointer;
+}
+.filter-clear:hover { color: var(--accent-hover); }
+.empty .filter-clear { margin-left: 0.25rem; }
 
 .cards { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; margin: 0; padding: 0; list-style: none; }
 
@@ -199,6 +327,20 @@ h2 { font-size: 1.25rem; margin: 2rem 0 0.5rem; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0; padding: 0; list-style: none; }
 .chips li { padding: 0.15rem 0.6rem; border-radius: 999px; background: var(--chip-bg); font-size: 0.85rem; overflow-wrap: anywhere; }
+
+.score {
+  display: none;
+  margin: 0;
+  padding: 0.05rem 0.5rem;
+  border-radius: 6px;
+  background: var(--chip-bg);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  white-space: nowrap;
+}
 
 .meta { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; margin: 0; padding: 0; list-style: none; color: var(--muted); font-size: 0.9rem; }
 .health { margin: 0; font-size: 0.9rem; }
@@ -246,6 +388,89 @@ td:nth-child(2), td:nth-child(3) { white-space: nowrap; }
   .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
+/* Card fields the visitor (or the config) turned off. */
+:root[data-fields-off~="reasons"] .chips,
+:root[data-fields-off~="health"] .health,
+:root[data-fields-off~="language"] .meta-lang,
+:root[data-fields-off~="stars"] .meta-stars { display: none; }
+
+/* Compact: smaller type, tighter cards, as many 15rem columns as fit (one on a phone,
+   four at most inside the 72rem page), descriptions to 3 lines and reasons to 2 rows. */
+:root[data-density="compact"] .cards {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: 0.65rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+:root[data-density="compact"] .card { gap: 0.4rem; padding: 0.65rem 0.8rem; border-radius: 10px; }
+:root[data-density="compact"] .card-title { font-size: 0.98rem; }
+:root[data-density="compact"] .badge { padding: 0.05rem 0.45rem; font-size: 0.72rem; }
+:root[data-density="compact"] .desc {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+}
+:root[data-density="compact"] .chips { row-gap: 0.25rem; column-gap: 0.3rem; max-height: 2.75rem; overflow: hidden; }
+:root[data-density="compact"] .chips li {
+  max-width: 100%;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+:root[data-density="compact"] .meta { gap: 0.15rem 0.75rem; font-size: 0.8rem; }
+:root[data-density="compact"] .health { font-size: 0.8rem; }
+:root[data-density="compact"] .actions { gap: 0.4rem; padding-top: 0.1rem; }
+:root[data-density="compact"] .btn,
+:root[data-density="list"] .btn { min-height: 2rem; min-width: 3.75rem; padding: 0.15rem 0.7rem; border-radius: 7px; font-size: 0.85rem; }
+
+/* List: one row per repo (name, score, top reason, stars and language, Keep and
+   Skip). On a phone each row stacks into three short lines. */
+:root[data-density="list"] .cards { grid-template-columns: minmax(0, 1fr); gap: 0; font-size: 0.9rem; }
+:root[data-density="list"] .cards > li + li { margin-top: -1px; }
+:root[data-density="list"] .cards > li:first-child .card { border-radius: 10px 10px 0 0; }
+:root[data-density="list"] .cards > li:last-child .card { border-radius: 0 0 10px 10px; }
+:root[data-density="list"] .cards > li:only-child .card { border-radius: 10px; }
+:root[data-density="list"] .card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "name score" "reason reason" "meta actions";
+  align-items: center;
+  gap: 0.3rem 0.75rem;
+  height: auto;
+  padding: 0.55rem 0.8rem;
+  border-radius: 0;
+}
+:root[data-density="list"] .card:focus-within { position: relative; z-index: 1; }
+:root[data-density="list"] .card-head { display: contents; }
+:root[data-density="list"] .card-title { grid-area: name; font-size: 0.95rem; }
+:root[data-density="list"] .score { display: block; grid-area: score; justify-self: end; }
+:root[data-density="list"] .badges,
+:root[data-density="list"] .desc,
+:root[data-density="list"] .health,
+:root[data-density="list"] .meta-pushed,
+:root[data-density="list"] .meta-listed { display: none; }
+:root[data-density="list"] .chips { grid-area: reason; flex-wrap: nowrap; min-width: 0; }
+:root[data-density="list"] .chips li { max-width: 100%; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:root[data-density="list"] .chips li:nth-child(n+2) { display: none; }
+:root[data-density="list"] .meta { grid-area: meta; gap: 0.1rem 0.75rem; font-size: 0.85rem; }
+:root[data-density="list"] .actions { grid-area: actions; gap: 0.4rem; margin: 0; padding: 0; justify-self: end; }
+
+@media (min-width: 48rem) {
+  :root[data-density="list"] .card {
+    grid-template-columns: minmax(0, 2.2fr) 3.25rem minmax(0, 2fr) minmax(7rem, 1.2fr) auto;
+    grid-template-areas: "name score reason meta actions";
+    gap: 0.25rem 1rem;
+    padding: 0.4rem 0.9rem;
+  }
+  :root[data-density="list"] .meta { flex-wrap: nowrap; white-space: nowrap; }
+}
+
 @media (forced-colors: active) {
-  .badge, .chips li, .btn, .pref-btn { border: 1px solid CanvasText; }
+  .badge, .chips li, .btn, .pref-btn, .density, .filter-chip, .score, .view-sort select, .view-menu summary { border: 1px solid CanvasText; }
+  .density-opt[aria-checked="true"], .filter-chip[aria-pressed="true"] { background: Highlight; color: HighlightText; forced-color-adjust: none; }
 }
