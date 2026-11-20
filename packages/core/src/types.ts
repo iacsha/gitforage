@@ -35,6 +35,8 @@ export interface Candidate {
   via_topics: string[];
   /** Keywords whose search returned this repo. */
   via_keywords: string[];
+  /** Catalog topics (site.personalize) whose search returned this repo. Not part of the default digest. */
+  via_catalog?: string[];
   fork?: { upstream: string; ahead_by: number; behind_by: number };
   /** Kin: the profile term pairs whose search found it. */
   kin?: { queries: string[] };

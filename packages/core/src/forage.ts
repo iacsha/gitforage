@@ -19,6 +19,7 @@ import { emptyStars, growthOf, recordStars, type StarsState } from "./observatio
 import type { Scored } from "./types.ts";
 import { detectLanguage } from "./language.ts";
 import { starFarmCheck, starFarmText } from "./starfarm.ts";
+import { catalogConfig, catalogTopics, isDefaultCandidate } from "./catalog.ts";
 
 /** Candidates with fewer stars are not worth a contributors call for the star-farm guard. */
 const FARM_CHECK_MIN_STARS = 2000;
@@ -35,6 +36,11 @@ export interface ForageOptions {
   stars?: StarsState;
   /** Keep/Skip marks (feedback.yml). Skipped repos are dropped; the rest nudge the score. */
   feedback?: Mark[];
+  /**
+   * Also forage the catalog topics (site.personalize) and return every eligible
+   * candidate scored for the catalog. The default digest is unchanged by it.
+   */
+  catalog?: boolean;
 }
 
 export interface ForageResult {
@@ -46,6 +52,8 @@ export interface ForageResult {
   found: Record<string, number>;
   /** The strongest terms of your profile (from stars_from and seeds). */
   profile: ProfileTerm[];
+  /** With `catalog`: every eligible candidate (seen or not), scored with the catalog topics. */
+  catalog: Scored[] | null;
 }
 
 /** Most seeds whose README is read for the profile. */
@@ -115,8 +123,9 @@ export async function forage(cfg: Config, gh: GitHub, opts: ForageOptions = {}):
     warnings.push(`profile failed: ${(e as Error).message}`);
   }
 
-  await step("search", () => searchSource(gh, cfg, pool, now));
-  await step("rising", () => risingSource(gh, cfg, pool, observations, now, observed));
+  const extra = opts.catalog ? catalogTopics(cfg) : [];
+  await step("search", () => searchSource(gh, cfg, pool, now, extra));
+  await step("rising", () => risingSource(gh, cfg, pool, observations, now, observed, extra));
   await step("fork", () => forkSource(gh, cfg, pool, seeds, now));
   await step("kin", () => kinSource(gh, cfg, pool, profile, now));
   for (const c of pool.items.values()) {
@@ -139,11 +148,15 @@ export async function forage(cfg: Config, gh: GitHub, opts: ForageOptions = {}):
     if (why) excluded.push({ full_name: c.repo.full_name, reason: why });
     else eligible.push(c);
   }
+  // The default digest only weighs candidates found by the config's own queries (see
+  // isDefaultCandidate), so the catalog searches do not change it.
+  const base = extra.length ? eligible.filter(isDefaultCandidate) : eligible;
+  if (extra.length) found.catalog = eligible.length - base.length;
   // Percentiles over everything eligible, seen or not, so they are stable from run to run.
-  if (cfg.popularity === "topic") assignPopularity(eligible, cfg, now);
+  if (cfg.popularity === "topic") assignPopularity(base, cfg, now);
   let skipped_seen = 0;
   const kept: Scored[] = [];
-  for (const c of eligible) {
+  for (const c of base) {
     if (opts.skip?.has(c.repo.full_name.toLowerCase())) { skipped_seen++; continue; }
     const f = feedbackOf(c.repo, nudges);
     if (f) c.feedback = f;
@@ -177,5 +190,28 @@ export async function forage(cfg: Config, gh: GitHub, opts: ForageOptions = {}):
   }
   rank(kept);
 
-  return { ranked: kept, excluded, skipped_seen, warnings, found, profile: profile.terms.slice(0, 30) };
+  const catalog = opts.catalog ? scoreCatalog(eligible, cfg, nudges, now) : null;
+  return { ranked: kept, excluded, skipped_seen, warnings, found, profile: profile.terms.slice(0, 30), catalog };
+}
+
+/**
+ * Score every eligible candidate (seen ones too) with the catalog topics, for the
+ * browser to re-rank. Signals are only there for the digest's top N. Popularity is
+ * recomputed within the catalog topics and then restored, so the digest's JSON keeps its own.
+ */
+function scoreCatalog(eligible: Candidate[], cfg: Config, nudges: ReturnType<typeof nudgesFrom>, now: number): Scored[] {
+  const ucfg = catalogConfig(cfg);
+  const list = eligible.filter((c) => !(cfg.filters.drop_suspected_star_farms && c.star_farm));
+  const saved = new Map(list.map((c) => [c, c.popularity] as const));
+  if (ucfg.popularity === "topic") assignPopularity(list, ucfg, now);
+  const scored = rank(list.map((c) => {
+    const f = feedbackOf(c.repo, nudges);
+    if (f) c.feedback = f;
+    return scoreCandidate(c, ucfg, now);
+  }));
+  for (const [c, p] of saved) {
+    if (p) c.popularity = p;
+    else delete c.popularity;
+  }
+  return scored;
 }

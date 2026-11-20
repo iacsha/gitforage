@@ -9,7 +9,7 @@ import { dirname, join, resolve } from "node:path";
 import {
   ConfigError, GitHub, RateLimitError, forage, loadConfig, loadFeedback, loadSeen, loadStars, markSeen, saveSeen, saveStars,
   seenKeys, toJson, toMarkdown, toText, tokenFromEnv, withMode, MODES, type Config, type ForageResult, type Mode,
-  appendFeedback, cleanText, intake, issuesFrom, isSafeFullName, isSafeLogin, isoDate, loadDigests, replyFor, saveDigest, toDigestItems, toRepo,
+  appendFeedback, catalogTopics, cleanText, loadCatalog, saveCatalog, selectCatalog, toCatalogItems, type CatalogState, intake, issuesFrom, isSafeFullName, isSafeLogin, isoDate, loadDigests, replyFor, saveDigest, toDigestItems, toRepo,
 } from "@gitforage/core";
 import { renderSite, writeSite } from "@gitforage/site";
 
@@ -127,7 +127,7 @@ function stats(gh: GitHub, started: number, res: ForageResult): string {
   const core = gh.buckets.core, search = gh.buckets.search;
   const left = [core && `core ${core.remaining}/${core.limit}`, search && `search ${search.remaining}/${search.limit}`].filter(Boolean).join(", ");
   return [
-    `found: ${res.found.search} search, ${res.found.rising} rising, ${res.found.fork} fork, ${res.found.kin} kin; ${res.excluded.length} excluded${excludedBreakdown(res)}` +
+    `found: ${res.found.search} search, ${res.found.rising} rising, ${res.found.fork} fork, ${res.found.kin} kin${res.found.catalog !== undefined ? `, ${res.found.catalog} catalog only` : ""}; ${res.excluded.length} excluded${excludedBreakdown(res)}` +
       (res.skipped_seen ? `, ${res.skipped_seen} already seen` : ""),
     `api: ${s.network} requests, ${s.cacheHits} from cache, ${s.retries} retries, waited ${Math.round(s.waitedMs / 1000)}s` +
       (left ? `; remaining ${left}` : ""),
@@ -183,7 +183,9 @@ export async function main(argv: string[], env = process.env): Promise<number> {
   if (fb.marks.length) log(`feedback: ${fb.marks.length} marks`);
   let res: ForageResult;
   try {
-    res = await forage(cfg, gh, { skip: seen ? seenKeys(seen) : undefined, log, stars, feedback: fb.marks });
+    // The personalization catalog is built by `run` in discover mode only (the Discover page uses it).
+    const catalog = args.cmd === "run" && cfg.mode === "discover" && cfg.site.personalize.enabled;
+    res = await forage(cfg, gh, { skip: seen ? seenKeys(seen) : undefined, log, stars, feedback: fb.marks, catalog });
   } catch (e) {
     if (e instanceof RateLimitError) { console.error(`gitforage: ${e.message}`); return 1; }
     throw e;
@@ -206,6 +208,11 @@ export async function main(argv: string[], env = process.env): Promise<number> {
     saveDigest(join(dirname(statePath), "digests"), {
       version: 1, date: isoDate(now.getTime()), mode: cfg.mode, generated_at: now.toISOString(), items: toDigestItems(items),
     });
+    if (res.catalog) {
+      const sel = selectCatalog(toCatalogItems(res.catalog, cfg, now.getTime()), catalogTopics(cfg), cfg.site.personalize.per_topic);
+      saveCatalog(join(dirname(statePath), "catalog.json"), { version: 1, generated_at: now.toISOString(), items: sel.items });
+      log(`catalog: ${sel.items.length} of ${res.catalog.length} candidates kept (${sel.per_topic} per topic at most)`);
+    }
     log(`recorded ${items.length} items in ${statePath}${args.out ? `; wrote ${args.out}` : ""}`);
   }
   if (!args.quiet) console.error(stats(gh, started, res));
@@ -218,7 +225,14 @@ function site(args: Args, cfg: Config, base: string, log: (m: string) => void): 
   if (!args.out) { console.error("gitforage: site needs --out DIR"); return 2; }
   const { digests, problems } = loadDigests(join(stateDir(args, base), "digests"));
   for (const p of problems) console.error(`warning: ${p}`);
-  const files = renderSite(cfg, digests, { repo: args.repo ?? null });
+  let catalog: CatalogState | null = null;
+  if (cfg.site.personalize.enabled) {
+    const loaded = loadCatalog(join(stateDir(args, base), "catalog.json"), new Set(catalogTopics(cfg)));
+    // Items that fail validation are dropped; report the count, not every one.
+    if (loaded.problems.length) console.error(`warning: ${loaded.problems.length} catalog problems, first: ${loaded.problems[0]}`);
+    catalog = loaded.catalog;
+  }
+  const files = renderSite(cfg, digests, { repo: args.repo ?? null, catalog });
   const n = writeSite(args.out, files);
   log(`site: ${digests.length} digests, wrote ${n} files to ${args.out}`);
   return 0;
