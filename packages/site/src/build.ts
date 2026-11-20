@@ -12,8 +12,8 @@ import { aboutPage, archivePage, digestPage, modePage, pagesUrl, topicPage, topi
 const ASSETS = ["site.css", "site.js", "theme.js", "icon.svg", "paper.svg", "paper-night.svg"];
 /** The heading font's license travels with it (SIL OFL 1.1), published at a lowercase path. */
 const FONT_LICENSE: [string, string] = ["fonts/OFL.txt", "assets/fonts/ofl.txt"];
-/** Binary assets, copied byte for byte: the self-hosted heading font (see assets/fonts/SOURCE.md). */
-export const BINARY_ASSETS = ["fonts/fraunces-fieldguide.woff2"];
+/** Binary assets, copied byte for byte: the self-hosted heading font (see assets/fonts/SOURCE.md) and the social card (scripts/og-card.ts). */
+export const BINARY_ASSETS = ["fonts/fraunces-fieldguide.woff2", "og-card.png"];
 /** Shipped only when site.personalize is on. */
 export const PERSONALIZE_ASSETS = ["personalize.js", "personalize-core.js", "strings.js", "rings.js", "fieldnote.js"];
 const assetDir = join(import.meta.dir, "..", "assets");

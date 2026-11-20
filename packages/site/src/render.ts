@@ -114,12 +114,40 @@ function analyticsTag(site: SiteConfig): Html {
  */
 const BRAND_MARK = trusted(`<svg class="brand-mark" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true" focusable="false"><path class="logo-leaf logo-ink" d="M33 34C40 20 52 12 60 10c-1 11-8 23-22 26-2 .4-4 0-5-2z"/><path class="logo-branch" d="M35 33c7-8 14-14 21-19"/><path class="logo-twig" d="M10 58C18 50 26 42 33 34"/><path class="logo-twig logo-twig-thin" d="M21 46c-3-6-2-13 2-18M27 40c5 1 10 6 11 12"/><circle class="logo-berry logo-ink-thin" cx="23" cy="26" r="6"/><circle class="logo-berry logo-ink-thin" cx="38" cy="53" r="6"/><circle class="logo-nut logo-ink-thin" cx="16" cy="51" r="4.6"/><circle class="logo-node" cx="21" cy="24.4" r="1.6"/><circle class="logo-node" cx="36" cy="51.4" r="1.6"/></svg>`);
 
+/** The social card every page points to, a 1200x630 PNG drawn by scripts/og-card.ts. */
+export const OG_IMAGE = "assets/og-card.png";
+
+/**
+ * Open Graph and Twitter card tags. Title and description go through the escaper like
+ * every value. The page URL and the card image must be absolute, so they come only from
+ * the configured site.url (already checked to be a plain https:// URL) and the page's
+ * own path, which the renderers build; without site.url they are left out.
+ */
+export function socialTags(ctx: SiteContext, o: { title: string; description: string; path: string }): Html {
+  const base = ctx.cfg.site.url;
+  if (base !== null && !/^https:\/\/[^\s"'<>?#]+\/$/.test(base)) throw new Error("site.url must be a plain https:// URL ending in /");
+  if (!/^(?:[a-z0-9][a-z0-9._-]*\/)*[a-z0-9][a-z0-9._-]*$/.test(o.path)) throw new Error(`bad page path ${o.path}`);
+  const abs = base ? (path: string) => `${base}${path}` : null;
+  return html`<meta property="og:type" content="website">
+<meta property="og:site_name" content="${ctx.cfg.site.title}">
+<meta property="og:title" content="${o.title}">
+<meta property="og:description" content="${o.description}">
+${abs ? html`<meta property="og:url" content="${abs(o.path)}">
+<meta property="og:image" content="${abs(OG_IMAGE)}">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The gitforage sprig emblem: A field guide to GitHub">
+` : ""}<meta name="twitter:card" content="${abs ? "summary_large_image" : "summary"}">`;
+}
+
 type Nav = "discover" | "contribute" | "topics" | "archive" | "about" | null;
 
 export function page(ctx: SiteContext, o: { title: string; description: string; root: string; path: string; nav: Nav; body: Html; personalize?: boolean }): string {
   const site = ctx.cfg.site;
   const link = (key: Nav, path: string, label: string) =>
     html`<li><a href="${href(o.root + path)}"${key === o.nav ? trusted(' aria-current="page"') : ""}>${label}</a></li>`;
+  const fullTitle = o.title === site.title ? site.title : `${o.title} · ${site.title}`;
   const doc = html`<!doctype html>
 <html lang="en" data-lang-default="${langPref(ctx.cfg).only ? "only" : "all"}" ${layoutAttrs(site)}>
 <head>
@@ -128,8 +156,9 @@ export function page(ctx: SiteContext, o: { title: string; description: string; 
 <meta http-equiv="Content-Security-Policy" content="${csp(site, { personalize: o.personalize })}">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
-<title>${o.title === site.title ? site.title : `${o.title} · ${site.title}`}</title>
+<title>${fullTitle}</title>
 <meta name="description" content="${o.description}">
+${socialTags(ctx, { title: fullTitle, description: o.description, path: o.path })}
 <script src="${href(`${o.root}assets/theme.js`)}"></script>
 <link rel="icon" href="${href(`${o.root}assets/icon.svg`)}" type="image/svg+xml">
 <link rel="stylesheet" href="${href(`${o.root}assets/site.css`)}">
