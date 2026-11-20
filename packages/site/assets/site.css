@@ -45,6 +45,8 @@
   --logo-shine: #e8bb67;
   --logo-branch: #a9c46e;
   --logo-node: #f4efe2;
+  --logo-leaf: #4f7a2e;
+  --logo-berry: #8e2f45;
   --paper: url("paper.svg");
   --radius: 6px;
   --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
@@ -82,6 +84,8 @@
     --logo-shine: #ecc479;
     --logo-branch: #b6d27c;
     --logo-node: #fbf7ec;
+    --logo-leaf: #6f9a45;
+    --logo-berry: #b04a62;
     --paper: url("paper-night.svg");
   }
 }
@@ -115,6 +119,8 @@
   --logo-shine: #ecc479;
   --logo-branch: #b6d27c;
   --logo-node: #fbf7ec;
+    --logo-leaf: #6f9a45;
+    --logo-berry: #b04a62;
   --paper: url("paper-night.svg");
 }
 
@@ -192,6 +198,11 @@ kbd {
 .logo-stem { stroke: var(--logo-ink); stroke-width: 4; stroke-linecap: round; }
 .logo-branch { fill: none; stroke: var(--logo-branch); stroke-width: 2.6; stroke-linecap: round; }
 .logo-node { fill: var(--logo-node); }
+.logo-leaf { fill: var(--logo-leaf); }
+.logo-berry { fill: var(--logo-berry); }
+.logo-twig { fill: none; stroke: var(--logo-cap); stroke-width: 4; stroke-linecap: round; }
+.logo-twig-thin { stroke-width: 2.6; }
+.logo-ink-thin { stroke: var(--logo-ink); stroke-width: 2; }
 .logo-head { fill: var(--logo-branch); stroke: var(--logo-node); stroke-width: 1.4; }
 
 /* Navigation: underlined like the tabs of a ring binder, not pills. */

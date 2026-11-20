@@ -112,7 +112,7 @@ function analyticsTag(site: SiteConfig): Html {
  * branch and merge. Fixed markup, coloured by the stylesheet so it follows the theme.
  * The favicon (assets/icon.svg) is its 16px cut. Other concepts: packages/site/design/logos.html.
  */
-const BRAND_MARK = trusted(`<svg class="brand-mark" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true" focusable="false"><path class="logo-nut logo-ink" d="M15.5 31h33c0 15-7.5 26-16.5 28C23 57 15.5 46 15.5 31z"/><path class="logo-shine" d="M22 36c.5 7 3 13 7 17"/><path class="logo-cap logo-ink" d="M9.5 31.5C9.5 19 19.5 12 32 12s22.5 7 22.5 19.5c0 1.5-1 2.5-2.5 2.5H12c-1.5 0-2.5-1-2.5-2.5z"/><path class="logo-stem" d="M32 12V5"/><path class="logo-branch" d="M17 27h30M21 27c0-6 4.5-8.5 11-8.5S43 21 43 27"/><circle class="logo-node" cx="21" cy="27" r="3.2"/><circle class="logo-node" cx="43" cy="27" r="3.2"/><circle class="logo-head" cx="32" cy="18.5" r="3.2"/></svg>`);
+const BRAND_MARK = trusted(`<svg class="brand-mark" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true" focusable="false"><path class="logo-leaf logo-ink" d="M33 34C40 20 52 12 60 10c-1 11-8 23-22 26-2 .4-4 0-5-2z"/><path class="logo-branch" d="M35 33c7-8 14-14 21-19"/><path class="logo-twig" d="M10 58C18 50 26 42 33 34"/><path class="logo-twig logo-twig-thin" d="M21 46c-3-6-2-13 2-18M27 40c5 1 10 6 11 12"/><circle class="logo-berry logo-ink-thin" cx="23" cy="26" r="6"/><circle class="logo-berry logo-ink-thin" cx="38" cy="53" r="6"/><circle class="logo-nut logo-ink-thin" cx="16" cy="51" r="4.6"/><circle class="logo-node" cx="21" cy="24.4" r="1.6"/><circle class="logo-node" cx="36" cy="51.4" r="1.6"/></svg>`);
 
 type Nav = "discover" | "contribute" | "topics" | "archive" | "about" | null;
 
