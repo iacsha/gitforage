@@ -116,7 +116,7 @@ const BRAND_MARK = trusted(`<svg class="brand-mark" viewBox="0 0 64 64" width="4
 
 type Nav = "discover" | "contribute" | "topics" | "archive" | "about" | null;
 
-export function page(ctx: SiteContext, o: { title: string; description: string; root: string; nav: Nav; body: Html; personalize?: boolean }): string {
+export function page(ctx: SiteContext, o: { title: string; description: string; root: string; path: string; nav: Nav; body: Html; personalize?: boolean }): string {
   const site = ctx.cfg.site;
   const link = (key: Nav, path: string, label: string) =>
     html`<li><a href="${href(o.root + path)}"${key === o.nav ? trusted(' aria-current="page"') : ""}>${label}</a></li>`;
@@ -160,7 +160,7 @@ ${o.body}
 </main>
 <footer class="site-foot">
 <div class="wrap">
-<p class="foot-stamp">Field guide updated <time datetime="${ctx.updated}">${fmtDate(ctx.updated)}</time> · <a href="${href(`${o.root}feed.xml`)}">Atom feed</a> · <a href="${href(`${o.root}about.html`)}">How scoring works</a></p>
+<p class="foot-stamp">Field guide updated <time datetime="${ctx.updated}">${fmtDate(ctx.updated)}</time> · <a href="${href(`${o.root}feed.xml`)}">Atom feed</a> · <a href="${href(`${o.root}about.html`)}">How scoring works</a> · <a href="${href(`${o.root}backtest.html`)}">Backtest (simulated)</a></p>
 <p><a href="${href(RUN_YOUR_OWN_URL)}">Run your own gitforage</a> · <span class="keys">Keys: <kbd>j</kbd> and <kbd>k</kbd> move between cards, <kbd>Enter</kbd> opens one.</span></p>
 </div>
 </footer>
@@ -444,7 +444,7 @@ ${list}
 </div>
 ${personalList()}
 ${pickDialog(ctx.cfg)}` : list}`;
-  return page(ctx, { title: MODE_TITLE[mode], description: MODE_LEDE[mode], root: "", nav: mode, body, personalize: personal });
+  return page(ctx, { title: MODE_TITLE[mode], description: MODE_LEDE[mode], root: "", path: MODE_PAGE[mode], nav: mode, body, personalize: personal });
 }
 
 /**
@@ -490,7 +490,7 @@ export function digestPage(ctx: SiteContext, d: Digest): string {
 <h1>${title}</h1>
 <p class="run-line">${plural(d.items.length, "specimen")} brought home on this walk.</p>
 ${d.items.length ? cardList(ctx, d.items, { health: d.mode === "contribute", found: () => d.generated_at }) : emptyState("Nothing new on this walk.")}`;
-  return page(ctx, { title, description: `${MODE_NAV[d.mode]} haul from ${fmtDate(d.generated_at)}`, root: "../", nav: "archive", body });
+  return page(ctx, { title, description: `${MODE_NAV[d.mode]} haul from ${fmtDate(d.generated_at)}`, root: "../", path: `archive/${d.date}-${d.mode}.html`, nav: "archive", body });
 }
 
 export function archivePage(ctx: SiteContext, digests: Digest[]): string {
@@ -501,7 +501,7 @@ export function archivePage(ctx: SiteContext, digests: Digest[]): string {
   const body = html`<h1>${STRINGS.archiveTitle}</h1>
 <p class="lede">${STRINGS.archiveLede}</p>
 ${rows.length ? html`<ul class="archive">${rows}</ul>` : emptyState("No hauls yet.")}`;
-  return page(ctx, { title: STRINGS.archiveTitle, description: "Past gitforage digests", root: "../", nav: "archive", body });
+  return page(ctx, { title: STRINGS.archiveTitle, description: "Past gitforage digests", root: "../", path: "archive/index.html", nav: "archive", body });
 }
 
 /** Items carrying a topic, across all digests, newest listing first, each repo once. */
@@ -525,7 +525,7 @@ export function topicsIndexPage(ctx: SiteContext, digests: Digest[]): string {
   const body = html`<h1>${STRINGS.topicsTitle}</h1>
 <p class="lede">${STRINGS.topicsLede}</p>
 ${rows.length ? html`<ul class="topic-list">${rows}</ul>` : emptyState("This portal has no topics configured; it forages by keywords, seeds or stars.")}`;
-  return page(ctx, { title: STRINGS.topicsTitle, description: "Repos by topic", root: "../", nav: "topics", body });
+  return page(ctx, { title: STRINGS.topicsTitle, description: "Repos by topic", root: "../", path: "topics/index.html", nav: "topics", body });
 }
 
 export function topicPage(ctx: SiteContext, digests: Digest[], topic: string): string {
@@ -536,7 +536,7 @@ export function topicPage(ctx: SiteContext, digests: Digest[], topic: string): s
 ${list.length
     ? cardList(ctx, list.map((x) => x.item), { health: false, found: (it) => list.find((x) => x.item === it)!.listed, pageTopic: topic })
     : emptyState("Nothing found in this patch yet.")}`;
-  return page(ctx, { title: topic, description: `Repos for the ${topic} topic`, root: "../", nav: "topics", body });
+  return page(ctx, { title: topic, description: `Repos for the ${topic} topic`, root: "../", path: `topics/${topic}.html`, nav: "topics", body });
 }
 
 const RULE_TEXT: Record<keyof Weights, string> = {
@@ -607,6 +607,7 @@ ${languageLine(cfg)}
 <p>The field note under the name is written by plain rules from the numbers gitforage measured: age, language, patch, how it was found and how its maintainers answer. It never borrows from the repo's own text. That text sits just below, in the maintainer's words, exactly as they wrote it.</p>
 <h2>How scoring works</h2>
 <p>Each rule adds points and a reason, and the score is the sum. The reasons are the tags on every card. Popularity is ranked within each topic and capped, so a small project that leads its niche can beat a big generic one. There is no machine learning and no paid placement: nothing here is sponsored.</p>
+<p>Ranking by fit is not the same as predicting what will trend. The <a href="${href("backtest.html")}">backtest (simulated)</a> replays these rules on 26 past weeks and reports both what they caught early and what they missed.</p>
 <p><strong>Discover</strong> ranks useful tools on fit, adoption, activity, releases and license. <strong>Get involved</strong> also weighs maintainers who merge outside pull requests and answer issues, starter issues, and wild forks.</p>
 <div class="table-wrap">
 <table>
@@ -630,7 +631,7 @@ ${cfg.site.personalize.enabled ? html`<p>"${STRINGS.pickPatch}" on the Discover 
 <h2 id="run-your-own">Run your own</h2>
 <p>gitforage is free and MIT licensed. Start your own field guide in about five minutes: create a repo from the gitforage template, describe your interests in <code>interests.yml</code>, and turn on GitHub Pages. A weekly GitHub Action does the rest; there is no server and no paid key.</p>
 <p><a class="btn" href="${href(RUN_YOUR_OWN_URL)}">Run your own gitforage</a></p>`;
-  return page(ctx, { title: "About", description: "How this gitforage portal finds and scores projects", root: "", nav: "about", body });
+  return page(ctx, { title: "About", description: "How this gitforage portal finds and scores projects", root: "", path: "about.html", nav: "about", body });
 }
 
 export const MODE_PAGES = MODE_PAGE;

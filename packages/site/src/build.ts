@@ -6,6 +6,7 @@ import { dirname, join, resolve, sep } from "node:path";
 import { isSafeFullName, type CatalogState, type Config, type Digest } from "@gitforage/core";
 import { catalogFile } from "./personalize.ts";
 import { atomFeed } from "./feed.ts";
+import { backtestPage } from "./backtest.ts";
 import { aboutPage, archivePage, digestPage, modePage, pagesUrl, topicPage, topicsIndexPage, type SiteContext } from "./render.ts";
 
 const ASSETS = ["site.css", "site.js", "theme.js", "icon.svg", "paper.svg", "paper-night.svg"];
@@ -44,6 +45,7 @@ export function renderSite(cfg: Config, digests: Digest[], o: BuildOptions = {})
   files.set("index.html", modePage(ctx, "discover", latest("discover")));
   files.set("involved.html", modePage(ctx, "contribute", latest("contribute")));
   files.set("about.html", aboutPage(ctx));
+  files.set("backtest.html", backtestPage(ctx));
   files.set("archive/index.html", archivePage(ctx, digests));
   for (const d of digests) files.set(`archive/${d.date}-${d.mode}.html`, digestPage(ctx, d));
   files.set("topics/index.html", topicsIndexPage(ctx, digests));
