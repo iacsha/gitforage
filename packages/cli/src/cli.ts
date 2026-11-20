@@ -11,7 +11,7 @@ import {
   seenKeys, toJson, toMarkdown, toText, tokenFromEnv, withMode, MODES, type Config, type ForageResult, type Mode,
   appendFeedback, catalogTopics, cleanText, loadCatalog, saveCatalog, selectCatalog, toCatalogItems, type CatalogState, intake, issuesFrom, isSafeFullName, isSafeLogin, isoDate, loadDigests, replyFor, saveDigest, toDigestItems, toRepo,
 } from "@gitforage/core";
-import { renderSite, writeSite } from "@gitforage/site";
+import { renderSite, siteBinaries, writeSite } from "@gitforage/site";
 
 const HELP = `gitforage: personalized GitHub discovery
 
@@ -233,7 +233,7 @@ function site(args: Args, cfg: Config, base: string, log: (m: string) => void): 
     catalog = loaded.catalog;
   }
   const files = renderSite(cfg, digests, { repo: args.repo ?? null, catalog });
-  const n = writeSite(args.out, files);
+  const n = writeSite(args.out, new Map<string, string | Uint8Array>([...files, ...siteBinaries()]));
   log(`site: ${digests.length} digests, wrote ${n} files to ${args.out}`);
   return 0;
 }

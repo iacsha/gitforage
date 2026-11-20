@@ -34,6 +34,24 @@ function attributeNames(body: string): string[] {
   return names;
 }
 
+/**
+ * SVG in the page body that the build did not draw: every <svg> after <main> must be a
+ * tree ring or the forage map, and hold only the shapes and attributes they use.
+ */
+function foreignSvg(body: string): string[] {
+  const main = body.slice(body.indexOf("<main"));
+  const bad: string[] = [];
+  for (const [svg] of main.matchAll(/<svg\b[\s\S]*?<\/svg>/g)) {
+    if (!/^<svg class="(ring-svg|map-svg)"/.test(svg)) bad.push(svg.slice(0, 60));
+    for (const [, tag] of svg.matchAll(/<([a-zA-Z]+)\b/g)) if (!["svg", "circle", "g", "path", "a", "ellipse", "text"].includes(tag)) bad.push(tag);
+    for (const n of attributeNames(svg)) {
+      if (!["class", "viewbox", "width", "height", "aria-hidden", "focusable", "cx", "cy", "r", "rx", "ry", "stroke-width", "d", "role", "aria-labelledby",
+        "href", "data-map-topic", "aria-label", "x", "y", "text-anchor"].includes(n)) bad.push(n);
+    }
+  }
+  return bad;
+}
+
 /** A description written to break out of every context it might land in. */
 const HOSTILE = [
   `<img src=x onerror="alert(1)">`,
@@ -109,7 +127,7 @@ describe("the portal", () => {
   test("has every page, the feed and the assets", () => {
     expect([...files.keys()].sort()).toEqual([
       "about.html", "archive/2026-11-15-discover.html", "archive/2026-11-22-contribute.html", "archive/2026-11-22-discover.html",
-      "archive/index.html", "assets/icon.svg", "assets/site.css", "assets/site.js", "assets/theme.js", "feed.xml", "index.html", "involved.html",
+      "archive/index.html", "assets/fonts/ofl.txt", "assets/icon.svg", "assets/paper-night.svg", "assets/paper.svg", "assets/site.css", "assets/site.js", "assets/theme.js", "feed.xml", "index.html", "involved.html",
       "topics/fhir.html", "topics/hl7.html", "topics/index.html",
     ]);
   });
@@ -118,17 +136,21 @@ describe("the portal", () => {
     const index = files.get("index.html")!;
     expect(index).toContain('<a href="index.html" aria-current="page">Discover</a>');
     expect(index).toContain('href="https://github.com/a/one"');
-    expect(index).toContain(">New</span>");
-    expect(index).toContain(">Like your stars</span>");
-    expect(index).toContain(">Live fork</span>");
-    expect(index).toContain("No description.");
+    expect(index).toContain(">Seedlings</span>");
+    expect(index).toContain(">Kindred</span>");
+    expect(index).toContain(">Wild forks</span>");
+    expect(index).toContain("No description left on the label.");
+    expect(index).toContain('<span class="desc-label">In the maintainer&#39;s words</span> A tool</p>');
     expect(index).toContain("<li>your topic hl7</li>");
     expect(index).toContain('<li class="meta-stars">120 stars</li>');
-    expect(index).toContain('pushed <time datetime="2026-11-20T00:00:00.000Z">Nov 20, 2026</time>');
-    expect(index).not.toContain("Maintainers");
+    expect(index).toContain('last growth <time datetime="2026-11-20T00:00:00.000Z">Nov 20, 2026</time>');
+    expect(index).toContain('Found <time datetime="2026-11-22T06:00:00.000Z">Nov 22, 2026</time>');
+    expect(index).toContain('<span class="sr-only">Specimen </span>No. 001</span>');
+    expect(index).not.toContain("Tended by");
     const involved = files.get("involved.html")!;
     expect(involved).toContain('<a href="involved.html" aria-current="page">Get involved</a>');
-    expect(involved).toContain(">Rising</span>");
+    expect(involved).toContain(">Thriving</span>");
+    expect(involved).toContain("Tended by maintainers who welcome outside hands: 6 outside pull requests merged in 90 days. They answered 8 of 10 recent issues.");
     expect(involved).toContain("merged 6 outside pull requests in 90 days · answered 8 of 10 recent issues");
   });
 
@@ -136,7 +158,8 @@ describe("the portal", () => {
     const index = files.get("index.html")!;
     expect(index).toContain(`href="https://github.com/acme/portal/issues/new?template=gitforage-feedback.md&amp;title=keep%3A%20a%2Fone&amp;labels=gitforage-feedback"`);
     expect(index).toContain('aria-label="Keep a/one: opens a prefilled GitHub issue"');
-    expect(index).toContain('aria-label="Skip a/one: opens a prefilled GitHub issue"');
+    expect(index).toContain('aria-label="Leave it: a/one, opens a prefilled GitHub issue">Leave it</a>');
+    expect(index).toContain("title=skip%3A%20a%2Fone");
     const none = renderSite(validateConfig({ topics: ["hl7"] }), digests, { now: NOW }).get("index.html")!;
     expect(none).not.toContain("btn-keep");
     expect(renderSite(validateConfig({ topics: ["hl7"] }), digests, { now: NOW, repo: "x/y" }).get("index.html")).toContain("github.com/x/y/issues/new");
@@ -148,7 +171,7 @@ describe("the portal", () => {
     expect(files.get("archive/2026-11-22-discover.html")).toContain('href="../assets/site.css"');
     const hl7 = files.get("topics/hl7.html")!;
     expect(hl7).toContain("a/one");
-    expect(hl7).toContain("listed <time");
+    expect(hl7).toContain("Found <time");
     expect(files.get("topics/fhir.html")).toContain("d/old");
     expect(files.get("topics/fhir.html")).not.toContain("a/one");
     const about = files.get("about.html")!;
@@ -164,16 +187,16 @@ describe("the portal", () => {
 
   test("footer: updated date, feed and run your own", () => {
     const index = files.get("index.html")!;
-    expect(index).toContain('Updated <time datetime="2026-11-22T12:00:00.000Z">Nov 22, 2026</time>');
+    expect(index).toContain('Field guide updated <time datetime="2026-11-22T12:00:00.000Z">Nov 22, 2026</time>');
     expect(index).toContain(">Run your own gitforage</a>");
     expect(index).toContain('<link rel="alternate" type="application/atom+xml"');
   });
 
   test("empty states before the first run", () => {
     const empty = renderSite(cfg, [], { now: NOW });
-    expect(empty.get("index.html")).toContain("No digest yet.");
-    expect(empty.get("involved.html")).toContain("No digest yet.");
-    expect(empty.get("archive/index.html")).toContain("No digests yet.");
+    expect(empty.get("index.html")).toContain("Nothing foraged yet.");
+    expect(empty.get("involved.html")).toContain("Nothing foraged yet.");
+    expect(empty.get("archive/index.html")).toContain("No hauls yet.");
   });
 
   test("writeSite writes under the output directory", () => {
@@ -199,8 +222,8 @@ describe("security of the rendered pages", () => {
   test("a hostile description renders inert", () => {
     const index = files.get("index.html")!;
     expect(index).not.toContain("<img");
-    // The header icons are the only SVG; none comes from repo text.
-    expect(index.slice(index.indexOf("<main"))).not.toContain("<svg");
+    // The only SVG in the page body is the build's own tree rings (and the forage map); none comes from repo text.
+    expect(foreignSvg(index)).toEqual([]);
     expect(index).not.toContain("<script>alert");
     expect(attributeNames(index).filter((n) => n.startsWith("on") || n === "style" || n === "autofocus")).toEqual([]);
     expect(index).not.toContain('href="javascript:');
@@ -239,7 +262,7 @@ describe("security of the rendered pages", () => {
   });
 
   test("every page sends the strict CSP", () => {
-    const want = "default-src 'none'; style-src 'self'; script-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'";
+    const want = "default-src 'none'; style-src 'self'; font-src 'self'; script-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'";
     expect(csp(cfg.site)).toBe(want);
     for (const [, body] of pages) expect(body).toContain(`<meta http-equiv="Content-Security-Policy" content="${want.replace(/'/g, "&#39;")}">`);
   });
@@ -267,7 +290,7 @@ describe("analytics", () => {
     expect(off).not.toContain("goatcounter");
     const cfg = config({ site: { repo: "acme/portal", analytics: { provider: "goatcounter", code: "acme-portal" } } });
     expect(csp(cfg.site)).toBe(
-      "default-src 'none'; style-src 'self'; script-src 'self' https://gc.zgo.at; img-src 'self' data: https://acme-portal.goatcounter.com; " +
+      "default-src 'none'; style-src 'self'; font-src 'self'; script-src 'self' https://gc.zgo.at; img-src 'self' data: https://acme-portal.goatcounter.com; " +
       "connect-src https://acme-portal.goatcounter.com; base-uri 'none'; form-action 'none'",
     );
     const on = renderSite(cfg, [], { now: NOW }).get("index.html")!;
@@ -413,7 +436,7 @@ describe("layout: density, fields, sort and filters", () => {
     "data-lang-default", "data-density", "data-sort-default", "data-fields-off", "data-lang", "data-lang-match", "data-sources", "data-topics",
     "data-score", "data-newest", "data-stars", "data-rising", "data-rank", "data-card", "data-cards", "data-theme-toggle", "data-theme-label",
     "data-lang-toggle", "data-pref-status", "data-density-group", "data-density-option", "data-view-bar", "data-sort-select", "data-field",
-    "data-filter", "data-value", "data-filter-count", "data-filter-clear", "data-filter-empty", "data-goatcounter",
+    "data-filter", "data-value", "data-filter-count", "data-filter-clear", "data-filter-empty", "data-goatcounter", "data-map-topic",
   ]);
   const NUMERIC = ["data-score", "data-newest", "data-stars", "data-rising", "data-rank"];
   const attrValues = (body: string, name: string) => [...body.matchAll(new RegExp(`\\s${name}="([^"]*)"`, "g"))].map((m) => m[1]);
@@ -467,7 +490,7 @@ describe("layout: density, fields, sort and filters", () => {
     expect(index).toContain('<div class="filter-group" role="group" aria-label="Filter by source">');
     expect(index).toContain('<div class="filter-group" role="group" aria-label="Filter by topic">');
     const chips = [...index.matchAll(/<button type="button" class="filter-chip" data-filter="(\w+)" data-value="([a-z0-9-]+)" aria-pressed="false">([^<]+)<\/button>/g)].map((m) => m.slice(1).join(":"));
-    expect(chips).toEqual(["source:search:New", "source:rising:Rising", "source:kin:Like your stars", "topic:hl7:hl7", "topic:fhir:fhir"]);
+    expect(chips).toEqual(["source:search:Seedlings", "source:rising:Thriving", "source:kin:Kindred", "topic:hl7:hl7", "topic:fhir:fhir"]);
     expect(index).toContain('<button type="button" class="filter-clear" data-filter-clear hidden>Clear filters</button>');
     expect(index).toContain('<p class="empty" data-filter-empty hidden>');
     const involved = renderSite(config(), [digest("contribute", [item("c/h", { health: { outside_prs_90d: 2, issue_response: null } })])], { now: NOW }).get("involved.html")!;
@@ -531,7 +554,7 @@ describe("layout: density, fields, sort and filters", () => {
           if (!path.endsWith(".html")) continue;
           expect(body).not.toContain("<img");
           expect(body).not.toContain("<script>alert");
-          expect(body.slice(body.indexOf("<main"))).not.toContain("<svg");
+          expect(foreignSvg(body)).toEqual([]);
           expect(attributeNames(body).filter((n) => n.startsWith("on") || n === "style" || n === "autofocus")).toEqual([]);
           expect(body).not.toMatch(/[‪-‮⁦-⁩​]/);
           const policy = /http-equiv="Content-Security-Policy" content="([^"]*)"/.exec(body)![1];

@@ -115,10 +115,10 @@ describe("the Discover page with personalization", () => {
   const policy = (body: string) => /http-equiv="Content-Security-Policy" content="([^"]*)"/.exec(body)![1].replace(/&#39;/g, "'");
 
   test("the CSP adds connect-src for itself and api.github.com only, only when enabled, only on Discover", () => {
-    expect(policy(index)).toBe("default-src 'none'; style-src 'self'; script-src 'self'; img-src 'self' data:; connect-src 'self' https://api.github.com; base-uri 'none'; form-action 'none'");
+    expect(policy(index)).toBe("default-src 'none'; style-src 'self'; font-src 'self'; script-src 'self'; img-src 'self' data:; connect-src 'self' https://api.github.com; base-uri 'none'; form-action 'none'");
     for (const [path, body] of files) {
       if (!path.endsWith(".html") || path === "index.html") continue;
-      expect([path, policy(body)]).toEqual([path, "default-src 'none'; style-src 'self'; script-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'"]);
+      expect([path, policy(body)]).toEqual([path, "default-src 'none'; style-src 'self'; font-src 'self'; script-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'"]);
     }
     const off = renderSite(config(null), [digest([dItem("a/one")])], { now: NOW }).get("index.html")!;
     expect(policy(off)).not.toContain("connect-src");
@@ -149,7 +149,7 @@ describe("the Discover page with personalization", () => {
   test("the picker dialog is labelled, described, grouped and keyboard friendly", () => {
     const d = index.slice(index.indexOf("<dialog"), index.indexOf("</dialog>") + 9);
     expect(d).toContain('<dialog class="pick" id="pick-dialog" aria-labelledby="pick-title" aria-describedby="pick-privacy" data-pick-dialog>');
-    expect(d).toContain('<h2 id="pick-title">Pick your topics</h2>');
+    expect(d).toContain('<h2 id="pick-title">Pick your patch</h2>');
     expect(d).toContain('<p class="pick-note" id="pick-privacy">');
     expect(index).toContain('data-pick-open aria-haspopup="dialog" aria-controls="pick-dialog"');
     expect(d).toContain('aria-label="Close without changes"');
@@ -205,7 +205,7 @@ describe("dangerous sinks in the portal scripts", () => {
   const scripts = readdirSync(assets).filter((f) => f.endsWith(".js"));
 
   test("no script writes markup or evaluates strings", () => {
-    expect(scripts.sort()).toEqual(["personalize-core.js", "personalize.js", "site.js", "theme.js"]);
+    expect(scripts.sort()).toEqual(["fieldnote.js", "personalize-core.js", "personalize.js", "rings.js", "site.js", "strings.js", "theme.js"]);
     const SINKS = [/innerHTML\s*=/, /\.innerHTML\b/, /outerHTML/, /insertAdjacentHTML/, /document\.write/, /\beval\s*\(/, /Function\s*\(/, /setTimeout\s*\(\s*["'`]/, /setInterval\s*\(\s*["'`]/, /srcdoc/, /createContextualFragment/, /DOMParser/];
     for (const f of scripts) {
       const js = readFileSync(join(assets, f), "utf8");
@@ -223,8 +223,11 @@ describe("dangerous sinks in the portal scripts", () => {
   test("personalize.js sets attributes only through the allow-list, links only to GitHub, storage only in try", () => {
     const js = readFileSync(join(assets, "personalize.js"), "utf8");
     const direct = [...js.matchAll(/\.setAttribute\(/g)].length;
-    expect(direct).toBe(1); // the one inside setAttr
+    expect(direct).toBe(2); // the one inside setAttr, and the one inside svgEl (the tree ring)
     expect(js).toContain('if (!ATTRS.has(name)) throw new Error("attribute not allowed: " + name);');
+    expect(js).toContain('if (!SVG_ATTRS.has(k)) throw new Error("svg attribute not allowed: " + k);');
+    expect(js).toContain('if (tag !== "svg" && tag !== "circle") throw new Error("svg tag not allowed: " + tag);');
+    expect(js).toContain('&& !NUM_RE.test(v)) throw new Error("bad ring number");');
     expect(js).toContain('if (name === "href" && !core.SAFE_HREF_RE.test(v)) throw new Error("link not allowed");');
     expect(js).not.toMatch(/\.(href|src|action)\s*=/);
     expect(js).not.toMatch(/querySelector(All)?\([^)]*\+/);

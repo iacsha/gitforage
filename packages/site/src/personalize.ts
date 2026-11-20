@@ -10,6 +10,7 @@ import {
   catalogTopics, selectCatalog, toCatalogItem, withMode, type CatalogItem, type CatalogState, type Config,
 } from "@gitforage/core";
 import { html, trusted, type Html } from "./html.ts";
+import { STRINGS } from "../assets/strings.js";
 
 export interface CatalogFile {
   version: 1;
@@ -76,7 +77,7 @@ const CLOSE_ICON = trusted(icon(`<path d="M6 6l12 12M18 6L6 18"/>`));
  */
 export function personalBar(): Html {
   return html`<div class="personal-bar" data-personal-bar hidden>
-<button type="button" class="pref-btn pick-open" data-pick-open aria-haspopup="dialog" aria-controls="pick-dialog">${PICK_ICON}<span>Pick your topics</span></button>
+<button type="button" class="pref-btn pick-open" data-pick-open aria-haspopup="dialog" aria-controls="pick-dialog">${PICK_ICON}<span>${STRINGS.pickPatch}</span></button>
 <p class="personal-summary" data-personal-summary aria-live="polite" aria-atomic="true"></p>
 <button type="button" class="filter-clear" data-copy-link hidden>Copy link</button>
 <button type="button" class="filter-clear" data-personal-reset hidden>Reset to the default view</button>
@@ -108,10 +109,10 @@ export function pickDialog(cfg: Config): Html {
 </fieldset>${i < p.groups.length - 1 ? "\n" : ""}`);
   return html`<dialog class="pick" id="pick-dialog" aria-labelledby="pick-title" aria-describedby="pick-privacy" data-pick-dialog>
 <div class="pick-head">
-<h2 id="pick-title">Pick your topics</h2>
+<h2 id="pick-title">${STRINGS.pickPatch}</h2>
 <button type="button" class="pick-x" data-pick-cancel aria-label="Close without changes">${CLOSE_ICON}</button>
 </div>
-<p class="pick-note" id="pick-privacy">Your picks and marks stay in this browser. Nothing is sent to gitforage.</p>
+<p class="pick-note" id="pick-privacy">${STRINGS.pickNote}</p>
 <div class="pick-body">
 ${packs.length ? html`<section class="pick-section" aria-labelledby="pick-packs-title">
 <h3 id="pick-packs-title">Starter packs</h3>
@@ -143,7 +144,7 @@ ${groups}
 </div>
 <div class="pick-foot">
 <p class="pick-count" aria-live="polite" aria-atomic="true" data-pick-count></p>
-<button type="button" class="btn btn-keep" data-pick-apply>Show my repos</button>
+<button type="button" class="btn btn-keep" data-pick-apply>${STRINGS.showMine}</button>
 <button type="button" class="btn" data-pick-none>Clear picks</button>
 <button type="button" class="btn" data-pick-cancel>Cancel</button>
 </div>

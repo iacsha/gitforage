@@ -1,4 +1,4 @@
-// gitforage portal: "Pick your topics" on the Discover page (site.personalize).
+// gitforage portal: "Pick your patch" on the Discover page (site.personalize).
 //
 // The visitor picks topics (or a starter pack, or lets their GitHub stars suggest some)
 // and this page re-ranks the catalog for them, in their browser. Choices and local
@@ -13,6 +13,9 @@
 //   validators in personalize-core.js before use, and every read is size-capped.
 // - Without JavaScript none of this runs, and the server-rendered digest is the page.
 import * as core from "./personalize-core.js";
+import { SOURCE_LABELS, STRINGS } from "./strings.js";
+import { ringShapes, ringSpec, ringWords } from "./rings.js";
+import { fieldNote } from "./fieldnote.js";
 
 const KEYS = { picks: "gitforage-picks", marks: "gitforage-marks", stars: "gitforage-stars" };
 /** Cards added to the personalized list at a time. */
@@ -25,11 +28,15 @@ const ATTRS = new Set([
 ]);
 const TAGS = new Set(["li", "article", "div", "h2", "a", "span", "p", "ul", "time", "button"]);
 const BADGES = {
-  fork: { label: "Live fork", cls: "badge badge-fork", title: "A fork that is ahead of upstream and recently pushed" },
-  rising: { label: "Rising", cls: "badge badge-rising", title: "An established repo gaining stars quickly" },
-  search: { label: "New", cls: "badge badge-new", title: "Created recently in one of these topics" },
-  kin: { label: "Like your stars", cls: "badge badge-kin", title: "Shares the topics and words that are unusual among the profile's stars" },
+  fork: { label: SOURCE_LABELS.fork.label, cls: "badge badge-fork", title: SOURCE_LABELS.fork.title },
+  rising: { label: SOURCE_LABELS.rising.label, cls: "badge badge-rising", title: SOURCE_LABELS.rising.title },
+  search: { label: SOURCE_LABELS.search.label, cls: "badge badge-new", title: SOURCE_LABELS.search.title },
+  kin: { label: SOURCE_LABELS.kin.label, cls: "badge badge-kin", title: SOURCE_LABELS.kin.title },
 };
+/** The tree ring is the only SVG built here: fixed tags and attributes, numbers from rings.js. */
+const SVG_NS = "http://www.w3.org/2000/svg";
+const SVG_ATTRS = new Set(["class", "viewBox", "width", "height", "aria-hidden", "focusable", "cx", "cy", "r", "stroke-width"]);
+const NUM_RE = /^\d{1,2}\.\d{2}$/;
 const BADGE_ORDER = ["fork", "rising", "search", "kin"];
 
 function read(key) {
@@ -64,6 +71,34 @@ function el(tag, attrs, text) {
   if (attrs) for (const k of Object.keys(attrs)) setAttr(node, k, attrs[k]);
   if (text !== undefined) node.textContent = text;
   return node;
+}
+
+/** An SVG element with allow-listed attributes; numeric ones must be plain decimals. */
+function svgEl(tag, attrs) {
+  if (tag !== "svg" && tag !== "circle") throw new Error("svg tag not allowed: " + tag);
+  const node = document.createElementNS(SVG_NS, tag);
+  for (const k of Object.keys(attrs)) {
+    if (!SVG_ATTRS.has(k)) throw new Error("svg attribute not allowed: " + k);
+    const v = String(attrs[k]);
+    if ((k === "cx" || k === "cy" || k === "r" || k === "stroke-width") && !NUM_RE.test(v)) throw new Error("bad ring number");
+    node.setAttribute(k, v);
+  }
+  return node;
+}
+
+/** The tree-ring glyph, the same shapes the server draws. */
+function ring(spec) {
+  const words = ringWords(spec);
+  const wrap = el("span", { class: "ring", title: words });
+  const svg = svgEl("svg", { class: "ring-svg", viewBox: "0 0 24 24", width: "28", height: "28", "aria-hidden": "true", focusable: "false" });
+  for (const c of ringShapes(spec)) {
+    const a = { class: c.cls, cx: c.cx, cy: c.cy, r: c.r };
+    if (c.cls !== "ring-pith") a["stroke-width"] = c.w;
+    svg.appendChild(svgEl("circle", a));
+  }
+  wrap.appendChild(svg);
+  wrap.appendChild(el("span", { class: "sr-only" }, words));
+  return wrap;
 }
 
 const q = (sel) => document.querySelector(sel);
@@ -194,7 +229,22 @@ function init() {
       "data-stars": core.numAttr(it.stars), "data-rank": core.numAttr(index), "data-repo": it.full_name,
     });
     const art = el("article", { class: "card", id: id, "data-card": "", "aria-labelledby": id + "-t" });
+    const spec = ringSpec(it.created_at, it.pushed_at, cat.generated_at, it.rising);
+    const line = el("p", { class: "spec-line" });
+    const no = el("span", { class: "spec-no" });
+    no.appendChild(el("span", { class: "sr-only" }, STRINGS.specimen + " "));
+    no.appendChild(document.createTextNode(STRINGS.specimenShort + " " + String(index + 1).padStart(3, "0")));
+    line.appendChild(no);
+    if (it.language) line.appendChild(el("span", { class: "spec-habitat meta-lang" }, STRINGS.habitat + ": " + it.language));
+    const found = core.formatDate(cat.generated_at);
+    if (found) {
+      const f = el("span", { class: "spec-found" }, STRINGS.found + " ");
+      f.appendChild(el("time", { datetime: cat.generated_at }, found));
+      line.appendChild(f);
+    }
+    art.appendChild(line);
     const head = el("div", { class: "card-head" });
+    head.appendChild(ring(spec));
     const h = el("h2", { class: "card-title", id: id + "-t" });
     const a = el("a", { href: url });
     a.appendChild(el("span", { class: "owner" }, parts[0] + "/"));
@@ -211,19 +261,29 @@ function init() {
     }
     head.appendChild(badges);
     art.appendChild(head);
-    art.appendChild(it.description ? el("p", { class: "desc" }, it.description) : el("p", { class: "desc desc-none" }, "No description."));
+    art.appendChild(el("p", { class: "note" }, fieldNote({
+      name: it.full_name, language: it.language, topics: it.topics, allowed: cat.topics,
+      years: spec.years, growth: spec.growth, sources: it.sources, health: null,
+    })));
+    if (it.description) {
+      const d = el("p", { class: "desc" });
+      d.appendChild(el("span", { class: "desc-label" }, STRINGS.maintainerWords));
+      d.appendChild(document.createTextNode(" " + it.description));
+      art.appendChild(d);
+    } else {
+      art.appendChild(el("p", { class: "desc desc-none" }, STRINGS.noDescription));
+    }
     const chips = r.reasons.filter(function (x) { return x.points > 0 && x.text; }).slice(0, 4);
     if (chips.length) {
-      const ul = el("ul", { class: "chips", "aria-label": "Why it is here" });
+      const ul = el("ul", { class: "chips", "aria-label": STRINGS.whyHere });
       for (const c of chips) ul.appendChild(el("li", null, c.text));
       art.appendChild(ul);
     }
     const meta = el("ul", { class: "meta" });
     meta.appendChild(el("li", { class: "meta-stars" }, plural(it.stars, "star")));
-    if (it.language) meta.appendChild(el("li", { class: "meta-lang" }, it.language));
     const pushed = core.formatDate(it.pushed_at);
     if (pushed) {
-      const p = el("li", { class: "meta-pushed" }, "pushed ");
+      const p = el("li", { class: "meta-pushed" }, STRINGS.pushed + " ");
       p.appendChild(el("time", { datetime: it.pushed_at }, pushed));
       meta.appendChild(p);
     }
@@ -233,14 +293,14 @@ function init() {
       const keep = core.feedbackUrl(cat.portal, "keep", it.full_name);
       const skip = core.feedbackUrl(cat.portal, "skip", it.full_name);
       if (keep && skip) {
-        actions.appendChild(el("a", { class: "btn btn-keep", href: keep, "aria-label": "Keep " + it.full_name + ": opens a prefilled GitHub issue" }, "Keep"));
-        actions.appendChild(el("a", { class: "btn btn-skip", href: skip, "aria-label": "Skip " + it.full_name + ": opens a prefilled GitHub issue" }, "Skip"));
+        actions.appendChild(el("a", { class: "btn btn-keep", href: keep, "aria-label": STRINGS.keep + " " + it.full_name + ": opens a prefilled GitHub issue" }, STRINGS.keep));
+        actions.appendChild(el("a", { class: "btn btn-skip", href: skip, "aria-label": STRINGS.skip + ": " + it.full_name + ", opens a prefilled GitHub issue" }, STRINGS.skip));
         art.appendChild(actions);
       }
     }
     const local = el("div", { class: "local-marks", "data-local-marks": "" });
-    local.appendChild(el("button", { type: "button", class: "local-btn", "data-local-mark": "keep", "aria-pressed": "false", "aria-label": "More like " + it.full_name + ", in this browser only" }, "More like this"));
-    local.appendChild(el("button", { type: "button", class: "local-btn", "data-local-mark": "skip", "aria-pressed": "false", "aria-label": "Hide " + it.full_name + ", in this browser only" }, "Hide"));
+    local.appendChild(el("button", { type: "button", class: "local-btn", "data-local-mark": "keep", "aria-pressed": "false", "aria-label": "More like " + it.full_name + ", in this browser only" }, STRINGS.moreLikeThis));
+    local.appendChild(el("button", { type: "button", class: "local-btn", "data-local-mark": "skip", "aria-pressed": "false", "aria-label": "Hide " + it.full_name + ", in this browser only" }, STRINGS.hide));
     art.appendChild(local);
     li.appendChild(art);
     paintMarks(li);
@@ -342,7 +402,7 @@ function init() {
     for (const x of all('[data-repo]')) if (x.getAttribute("data-repo") === full) paintMarks(x);
     paintMarksCount();
     const m = marks[full];
-    announce(m ? (m.mark === "skip" ? "Hidden " + full + " in this browser. Clear your local marks under Pick your topics to undo." : "Marked " + full + ": more like this, in this browser.") : "Mark removed from " + full + ".");
+    announce(m ? (m.mark === "skip" ? "Hidden " + full + " in this browser. Clear your local marks under " + STRINGS.pickPatch + " to undo." : "Marked " + full + ": more like this, in this browser.") : "Mark removed from " + full + ".");
     if (!personal.hidden) {
       const keepShown = shown;
       renderPersonal();
@@ -365,7 +425,7 @@ function init() {
     for (const b of packBtns) setAttr(b, "aria-pressed", b.getAttribute("data-pack") === pendingPack ? "true" : "false");
   }
   function updateCount() {
-    if (!cat) { countLine.textContent = "Loading the catalog…"; applyBtn.textContent = "Show my repos"; return; }
+    if (!cat) { countLine.textContent = "Loading the catalog…"; applyBtn.textContent = STRINGS.showMine; return; }
     const topics = checked();
     if (!topics.length) {
       countLine.textContent = "No topics picked: Show goes back to the default view.";
@@ -374,7 +434,7 @@ function init() {
     }
     const n = core.rank(cat.items, topics, marks, cat.weights).length;
     countLine.textContent = plural(n, "repo") + " for " + plural(topics.length, "topic") + ".";
-    applyBtn.textContent = "Show " + plural(n, "repo");
+    applyBtn.textContent = "Show " + plural(n, "find");
   }
   function paintCached() {
     const c = cat ? core.readStarsCache(read(KEYS.stars), cat, Date.now()) : null;

@@ -8,9 +8,13 @@ import { catalogFile } from "./personalize.ts";
 import { atomFeed } from "./feed.ts";
 import { aboutPage, archivePage, digestPage, modePage, pagesUrl, topicPage, topicsIndexPage, type SiteContext } from "./render.ts";
 
-const ASSETS = ["site.css", "site.js", "theme.js", "icon.svg"];
+const ASSETS = ["site.css", "site.js", "theme.js", "icon.svg", "paper.svg", "paper-night.svg"];
+/** The heading font's license travels with it (SIL OFL 1.1), published at a lowercase path. */
+const FONT_LICENSE: [string, string] = ["fonts/OFL.txt", "assets/fonts/ofl.txt"];
+/** Binary assets, copied byte for byte: the self-hosted heading font (see assets/fonts/SOURCE.md). */
+export const BINARY_ASSETS = ["fonts/fraunces-fieldguide.woff2"];
 /** Shipped only when site.personalize is on. */
-export const PERSONALIZE_ASSETS = ["personalize.js", "personalize-core.js"];
+export const PERSONALIZE_ASSETS = ["personalize.js", "personalize-core.js", "strings.js", "rings.js", "fieldnote.js"];
 const assetDir = join(import.meta.dir, "..", "assets");
 
 export interface BuildOptions {
@@ -46,6 +50,7 @@ export function renderSite(cfg: Config, digests: Digest[], o: BuildOptions = {})
   for (const t of cfg.topics) files.set(`topics/${t}.html`, topicPage(ctx, digests, t));
   files.set("feed.xml", atomFeed(digests, { title: cfg.site.title, baseUrl: ctx.baseUrl, updated: ctx.updated }));
   for (const a of ASSETS) files.set(`assets/${a}`, readFileSync(join(assetDir, a), "utf8"));
+  files.set(FONT_LICENSE[1], readFileSync(join(assetDir, FONT_LICENSE[0]), "utf8"));
   if (cfg.site.personalize.enabled) {
     files.set("catalog.json", JSON.stringify(catalogFile(cfg, o.catalog ?? null, ctx.portal)));
     for (const a of PERSONALIZE_ASSETS) files.set(`assets/${a}`, readFileSync(join(assetDir, a), "utf8"));
@@ -53,8 +58,13 @@ export function renderSite(cfg: Config, digests: Digest[], o: BuildOptions = {})
   return files;
 }
 
+/** The binary assets (the font), to write next to renderSite's text files. */
+export function siteBinaries(): Map<string, Uint8Array> {
+  return new Map(BINARY_ASSETS.map((a) => [`assets/${a}`, new Uint8Array(readFileSync(join(assetDir, a)))]));
+}
+
 /** Write the files under outDir. Paths come from renderSite only and must stay inside outDir. */
-export function writeSite(outDir: string, files: Map<string, string>): number {
+export function writeSite(outDir: string, files: Map<string, string | Uint8Array>): number {
   const root = resolve(outDir);
   for (const [rel, content] of files) {
     if (!/^[a-z0-9][a-z0-9._/-]*$/.test(rel) || rel.includes("..")) throw new Error(`bad output path ${rel}`);

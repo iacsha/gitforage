@@ -230,7 +230,34 @@
     each("[data-filter-empty]", function (p) { p.hidden = !(any && shown === 0 && total > 0); });
     var text = shown + " shown of " + total;
     each("[data-filter-count]", function (p) { p.textContent = text; });
+    paintMap();
   }
+  // The forage map: each hill links to its patch's page, which works without
+  // JavaScript. Here a click presses the matching topic chip instead, when this list
+  // has one and the default list is showing. Values are compared, never put into a selector.
+  function paintMap() {
+    each("[data-map-topic]", function (hill) {
+      var on = active.topic.indexOf(hill.getAttribute("data-map-topic")) >= 0;
+      hill.classList.toggle("is-on", on);
+      if (on) hill.setAttribute("aria-current", "true");
+      else hill.removeAttribute("aria-current");
+    });
+  }
+  each("[data-map-topic]", function (hill) {
+    hill.addEventListener("click", function (e) {
+      var value = hill.getAttribute("data-map-topic");
+      var view = document.querySelector("[data-default-view]");
+      if (!value || (view && view.hidden)) return;
+      var chips = document.querySelectorAll('[data-filter="topic"]');
+      for (var i = 0; i < chips.length; i++) {
+        if (chips[i].getAttribute("data-value") === value) {
+          e.preventDefault();
+          chips[i].click();
+          return;
+        }
+      }
+    });
+  });
   each("[data-filter]", function (chip) {
     var kind = chip.getAttribute("data-filter");
     var value = chip.getAttribute("data-value");
