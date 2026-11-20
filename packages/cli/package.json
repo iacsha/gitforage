@@ -1,0 +1,9 @@
+{
+  "name": "gitforage",
+  "version": "0.0.1",
+  "description": "Personalized GitHub discovery: new repos, live forks and kin of your stars, ranked by fit",
+  "license": "MIT",
+  "type": "module",
+  "bin": { "gitforage": "src/cli.ts" },
+  "dependencies": { "@gitforage/core": "workspace:*", "@gitforage/site": "workspace:*" }
+}

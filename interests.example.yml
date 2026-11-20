@@ -1,0 +1,68 @@
+# gitforage interests file. Copy to interests.yml and edit.
+# Every section except one source (topics, keywords, seeds or stars_from) is optional.
+
+# Free text about you. Not used by the rules; the optional LLM re-rank (coming) reads it.
+profile: |
+  Backend developer. I like self-hostable tools that run in Docker,
+  and projects whose maintainers merge outside pull requests.
+
+# GitHub topics (lowercase, hyphens). Each one is a search for new repos.
+topics: [self-hosted, home-assistant]
+
+# Phrases searched in name, description and README.
+keywords: ["MQTT bridge"]
+
+# Projects you follow. gitforage looks for their live forks and for repos
+# starred by the same people.
+seeds:
+  - home-assistant/core
+
+# Optional, and recommended: a GitHub user (normally you). Their stars count as
+# "already known", and gitforage learns your interests from them: the topics and
+# words unusually common among your stars drive kin-of-stars and the affinity score.
+stars_from: ""
+
+exclude:
+  topics: [awesome-list, awesome]
+  keywords: ["awesome-"]          # matched against owner/name and description
+  owners: []
+  # Keywords and regexes on name, description and topics. A plain string is a
+  # keyword matched in all three; a mapping takes keyword: or regex: plus an
+  # optional in: [name, description, topics]. Nothing below is on by default:
+  # uncomment what you want. This example drops crypto giveaway and game-cheat
+  # spam while keeping real crypto libraries and game tools.
+  patterns: []
+  # patterns:
+  #   - "airdrop bot"
+  #   - "free followers"
+  #   - { keyword: "cheat", in: [name, topics] }
+  #   - { regex: "\\b(crypto|token)\\s+(airdrop|giveaway)s?\\b", in: [description] }
+  #   - { regex: "^(cheat|hack)s?-(menu|tool)s?$", in: [topics] }
+
+filters:
+  min_stars: 5                    # forks are exempt
+  max_age_days: 365               # "new" means created within this many days
+  languages: []                   # empty = any, else e.g. [typescript, go]
+  spoken_languages: []            # description languages, e.g. [en]; empty = any (see README)
+  drop_undetected: false          # with spoken_languages: also drop repos whose language cannot be told
+  drop_suspected_star_farms: false  # drop repos whose stars look bought, instead of only lowering their score
+
+mode: discover                    # discover (find useful tools) | contribute (projects to contribute to)
+popularity: topic                 # topic: stars ranked within each of your interests | global: raw counts
+cadence: weekly                   # daily | weekly | monthly (stored; the template workflow runs weekly)
+digest_size: 20
+
+llm:                              # coming; rules only for now
+  provider: none                  # none | anthropic | openai-compatible | ollama
+  model: ""
+
+# Optional tuning. Defaults are listed in the README.
+# weights:
+#   topic_match: 3
+#   fork_ahead: 2
+# limits:
+#   fork_compares_per_seed: 8
+#   kin_queries: 12
+#   rising_min_growth: 10
+# cache:
+#   ttl_hours: 12

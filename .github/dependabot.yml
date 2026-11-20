@@ -1,0 +1,21 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+  # The template's workflows are a separate tree; keep their pinned actions current too.
+  - package-ecosystem: github-actions
+    directory: /template
+    schedule:
+      interval: weekly
+    groups:
+      template-actions:
+        patterns: ["*"]
+  - package-ecosystem: bun
+    directory: /
+    schedule:
+      interval: weekly

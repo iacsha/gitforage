@@ -1,0 +1,15 @@
+{
+  "name": "gitforage-workspace",
+  "private": true,
+  "type": "module",
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc -p .",
+    "gitforage": "bun packages/cli/src/cli.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.5",
+    "typescript": "7.0.2"
+  }
+}

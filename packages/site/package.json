@@ -1,0 +1,12 @@
+{
+  "name": "@gitforage/site",
+  "version": "0.0.1",
+  "description": "gitforage static portal and Atom feed",
+  "license": "MIT",
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": { "@gitforage/core": "workspace:*" }
+}

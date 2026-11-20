@@ -1,0 +1,14 @@
+{
+  "name": "@gitforage/core",
+  "version": "0.0.1",
+  "description": "gitforage core: sources, scoring and state for personalized GitHub discovery",
+  "license": "MIT",
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "yaml": "2.9.1"
+  }
+}

@@ -1,0 +1,7 @@
+node_modules/
+.gitforage/
+state/
+examples/state/
+*.log
+.env
+!template/state/
