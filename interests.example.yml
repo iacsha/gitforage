@@ -52,6 +52,12 @@ popularity: topic                 # topic: stars ranked within each of your inte
 cadence: weekly                   # daily | weekly | monthly (stored; the template workflow runs weekly)
 digest_size: 20
 
+revival:                          # dead upstream, live fork: the Revivals tab (revival.html)
+  enabled: false                  # searches your topics; at most 2 searches per topic + 5 calls per candidate
+  dormancy_months: 12             # no push for this long (or archived) counts as dormant
+  max_candidates: 10              # upstreams examined afresh per run; checks are reused for 28 days
+  min_fork_stars: 5               # the fork needs this many stars (or 3 open issues of its own)
+
 llm:                              # coming; rules only for now
   provider: none                  # none | anthropic | openai-compatible | ollama
   model: ""

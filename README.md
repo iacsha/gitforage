@@ -236,6 +236,10 @@ See [`interests.example.yml`](interests.example.yml). You need at least one of `
 | `feedback.visitor_weight` | `0.25` | How much a visitor mark counts next to an owner mark (0 to 1). |
 | `feedback.max_per_user` | `3` | Most marks one person can add a day. Owners are not limited. |
 | `feedback.min_account_age_days` | `30` | Visitor accounts younger than this are ignored. |
+| `revival.enabled` | `false` | The Revival radar: in your topics, upstreams that are archived or have not been pushed for `dormancy_months`, carried on by a fork that is ahead of upstream, pushed in the last 180 days and has some traction. Shown on `revival.html` (the Revivals tab). Needs `topics`. |
+| `revival.dormancy_months` | `12` | No push for this many months (3 to 120), or archived, counts as dormant. |
+| `revival.max_candidates` | `10` | Upstreams examined afresh per run (1 to 50). Each costs at most 5 API calls; a check is reused from `state/revival.json` for 28 days. |
+| `revival.min_fork_stars` | `5` | Stars a fork needs to count as carrying the project (3 open issues of its own also count). |
 
 Archived and disabled repos are always dropped, as are your seeds and the repos `stars_from` has starred.
 
