@@ -74,7 +74,10 @@ describe("workflows", () => {
 
   test("template: both workflows pin the same gitforage commit; the release script replaces the placeholder", () => {
     const shas = ["forage.yml", "feedback.yml"].map((f) => load(join(root, "template", ".github", "workflows", f)).wf.env.GITFORAGE_SHA);
-    expect(shas).toEqual([PLACEHOLDER_SHA, PLACEHOLDER_SHA]);
+    // Both workflows run the same gitforage commit: the placeholder on main before a
+    // release, or a real full SHA once scripts/pin-template.ts has pinned it.
+    expect(shas[0]).toBe(shas[1]);
+    expect(shas[0]).toMatch(/^[0-9a-f]{40}$/);
     const text = readFileSync(join(root, "template", ".github", "workflows", "forage.yml"), "utf8");
     const sha = "0123456789abcdef0123456789abcdef01234567";
     expect(parse(pinWorkflow(text, sha)).env.GITFORAGE_SHA).toBe(sha);
