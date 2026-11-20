@@ -155,6 +155,13 @@ describe("cli preview and run", () => {
     expect(index).toContain("github.com/acme/portal/issues/new?template=gitforage-feedback.md&amp;title=keep%3A%20a%2Fone");
     expect(existsSync(join(site, "feed.xml"))).toBe(true);
     expect(existsSync(join(site, "assets", "site.js"))).toBe(true);
+    expect(existsSync(join(site, "assets", "og-card.png"))).toBe(true);
+    expect(readFileSync(join(site, "haul", "001.html"), "utf8")).not.toContain("haul-note");
+    // haul.txt next to the config adds a note to an issue.
+    writeFileSync(join(dir, "haul.txt"), "# notes\n1: The <first> walk.\n");
+    expect(await main(["site", "--config", cfgPath(), "--quiet", "--out", site, "--repo", "acme/portal"], {})).toBe(0);
+    expect(readFileSync(join(site, "haul", "001.html"), "utf8")).toContain('<p class="lede haul-note">The &lt;first&gt; walk.</p>');
+    expect(readFileSync(join(site, "haul", "feed.xml"), "utf8")).toContain("<title>The Haul, No. 001</title>");
     expect(await main(["site", "--config", cfgPath(), "--quiet"], {})).toBe(2);
     expect(() => parseArgs(["site", "--repo", "a/b c"])).toThrow("--repo must look like owner/name");
   });
