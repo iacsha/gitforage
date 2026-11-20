@@ -7,6 +7,7 @@ import { isSafeFullName, type CatalogState, type Config, type Digest } from "@gi
 import { catalogFile } from "./personalize.ts";
 import { atomFeed } from "./feed.ts";
 import { backtestPage } from "./backtest.ts";
+import { haulFiles } from "./haul.ts";
 import { aboutPage, archivePage, digestPage, modePage, pagesUrl, topicPage, topicsIndexPage, type SiteContext } from "./render.ts";
 
 const ASSETS = ["site.css", "site.js", "theme.js", "icon.svg", "paper.svg", "paper-night.svg"];
@@ -25,6 +26,8 @@ export interface BuildOptions {
   now?: string;
   /** state/catalog.json, for site.personalize. Validated again here. */
   catalog?: CatalogState | null;
+  /** One-line notes for Haul issues, by issue number (from haul.txt). */
+  haulNotes?: Map<number, string> | null;
 }
 
 export function siteContext(cfg: Config, o: BuildOptions = {}): SiteContext {
@@ -50,6 +53,7 @@ export function renderSite(cfg: Config, digests: Digest[], o: BuildOptions = {})
   for (const d of digests) files.set(`archive/${d.date}-${d.mode}.html`, digestPage(ctx, d));
   files.set("topics/index.html", topicsIndexPage(ctx, digests));
   for (const t of cfg.topics) files.set(`topics/${t}.html`, topicPage(ctx, digests, t));
+  for (const [p, body] of haulFiles(ctx, digests, o.haulNotes ?? undefined)) files.set(p, body);
   files.set("feed.xml", atomFeed(digests, { title: cfg.site.title, baseUrl: ctx.baseUrl, updated: ctx.updated }));
   for (const a of ASSETS) files.set(`assets/${a}`, readFileSync(join(assetDir, a), "utf8"));
   files.set(FONT_LICENSE[1], readFileSync(join(assetDir, FONT_LICENSE[0]), "utf8"));

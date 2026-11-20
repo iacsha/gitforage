@@ -4,14 +4,14 @@
 // keeps the digest in state/digests/ for the portal. `site` builds the static portal.
 // `feedback` folds Keep/Skip issues into feedback.yml.
 
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import {
   ConfigError, GitHub, RateLimitError, forage, loadConfig, loadFeedback, loadSeen, loadStars, markSeen, saveSeen, saveStars,
   seenKeys, toJson, toMarkdown, toText, tokenFromEnv, withMode, MODES, type Config, type ForageResult, type Mode,
   appendFeedback, catalogTopics, cleanText, loadCatalog, saveCatalog, selectCatalog, toCatalogItems, type CatalogState, intake, issuesFrom, isSafeFullName, isSafeLogin, isoDate, loadDigests, replyFor, saveDigest, toDigestItems, toRepo,
 } from "@gitforage/core";
-import { renderSite, siteBinaries, writeSite } from "@gitforage/site";
+import { MAX_HAUL_NOTES_BYTES, parseHaulNotes, renderSite, siteBinaries, writeSite } from "@gitforage/site";
 
 const HELP = `gitforage: personalized GitHub discovery
 
@@ -232,10 +232,23 @@ function site(args: Args, cfg: Config, base: string, log: (m: string) => void): 
     if (loaded.problems.length) console.error(`warning: ${loaded.problems.length} catalog problems, first: ${loaded.problems[0]}`);
     catalog = loaded.catalog;
   }
-  const files = renderSite(cfg, digests, { repo: args.repo ?? null, catalog });
+  const files = renderSite(cfg, digests, { repo: args.repo ?? null, catalog, haulNotes: loadHaulNotes(join(base, "haul.txt")) });
   const n = writeSite(args.out, new Map<string, string | Uint8Array>([...files, ...siteBinaries()]));
   log(`site: ${digests.length} digests, wrote ${n} files to ${args.out}`);
   return 0;
+}
+
+/** haul.txt next to the config: optional one-line notes for Haul issues. Missing is fine. */
+function loadHaulNotes(path: string): Map<number, string> | null {
+  try {
+    if (statSync(path).size > MAX_HAUL_NOTES_BYTES) { console.error("warning: haul.txt is larger than 64 KB, ignored"); return null; }
+    const { notes, problems } = parseHaulNotes(readFileSync(path, "utf8"));
+    for (const p of problems.slice(0, 5)) console.error(`warning: ${p}`);
+    return notes;
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw e;
+  }
 }
 
 /** Most bytes read from an intake JSON input. */

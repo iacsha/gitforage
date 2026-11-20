@@ -127,7 +127,7 @@ describe("the portal", () => {
   test("has every page, the feed and the assets", () => {
     expect([...files.keys()].sort()).toEqual([
       "about.html", "archive/2026-11-15-discover.html", "archive/2026-11-22-contribute.html", "archive/2026-11-22-discover.html",
-      "archive/index.html", "assets/fonts/ofl.txt", "assets/icon.svg", "assets/paper-night.svg", "assets/paper.svg", "assets/site.css", "assets/site.js", "assets/theme.js", "backtest.html", "feed.xml", "index.html", "involved.html",
+      "archive/index.html", "assets/fonts/ofl.txt", "assets/icon.svg", "assets/paper-night.svg", "assets/paper.svg", "assets/site.css", "assets/site.js", "assets/theme.js", "backtest.html", "feed.xml", "haul/001.html", "haul/002.html", "haul/feed.xml", "haul/index.html", "index.html", "involved.html",
       "topics/fhir.html", "topics/hl7.html", "topics/index.html",
     ]);
   });

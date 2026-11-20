@@ -189,7 +189,7 @@ ${o.body}
 </main>
 <footer class="site-foot">
 <div class="wrap">
-<p class="foot-stamp">Field guide updated <time datetime="${ctx.updated}">${fmtDate(ctx.updated)}</time> · <a href="${href(`${o.root}feed.xml`)}">Atom feed</a> · <a href="${href(`${o.root}about.html`)}">How scoring works</a> · <a href="${href(`${o.root}backtest.html`)}">Backtest (simulated)</a></p>
+<p class="foot-stamp">Field guide updated <time datetime="${ctx.updated}">${fmtDate(ctx.updated)}</time> · <a href="${href(`${o.root}feed.xml`)}">Atom feed</a> · <a href="${href(`${o.root}haul/index.html`)}">The Haul</a> · <a href="${href(`${o.root}about.html`)}">How scoring works</a> · <a href="${href(`${o.root}backtest.html`)}">Backtest (simulated)</a></p>
 <p><a href="${href(RUN_YOUR_OWN_URL)}">Run your own gitforage</a> · <span class="keys">Keys: <kbd>j</kbd> and <kbd>k</kbd> move between cards, <kbd>Enter</kbd> opens one.</span></p>
 </div>
 </footer>
@@ -529,6 +529,7 @@ export function archivePage(ctx: SiteContext, digests: Digest[]): string {
     html`${i ? " · " : ""}<a href="${href(`${d.date}-${d.mode}.html`)}">${MODE_NAV[d.mode]}</a> <span class="muted">(${plural(d.items.length, "repo")})</span>`)}</li>`);
   const body = html`<h1>${STRINGS.archiveTitle}</h1>
 <p class="lede">${STRINGS.archiveLede}</p>
+<p class="run-line">The best three new finds of each week are kept as numbered issues in <a href="${href("../haul/index.html")}">The Haul</a>.</p>
 ${rows.length ? html`<ul class="archive">${rows}</ul>` : emptyState("No hauls yet.")}`;
   return page(ctx, { title: STRINGS.archiveTitle, description: "Past gitforage digests", root: "../", path: "archive/index.html", nav: "archive", body });
 }
