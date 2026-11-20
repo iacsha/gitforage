@@ -94,7 +94,32 @@ export interface SiteConfig {
   analytics: { provider: "goatcounter"; code: string } | null;
   /** The portal's default layout. Visitors can change it; their choice is kept in their browser. */
   layout: LayoutConfig;
+  /** Browser-side personalization of the Discover page: a topic catalog, starter packs, the visitor's stars. */
+  personalize: PersonalizeConfig;
 }
+
+export interface TopicGroup { name: string; topics: string[] }
+export interface StarterPack { id: string; name: string; topics: string[] }
+
+export interface PersonalizeConfig {
+  enabled: boolean;
+  /** The picker's groups, in order. Catalog topics not in a group go into a last "More topics" group. */
+  groups: TopicGroup[];
+  /** Every catalog topic: the groups' topics, `catalog.topics` and the config's own topics, deduplicated. */
+  topics: string[];
+  /** Most catalog candidates kept per topic (the best by base score). */
+  per_topic: number;
+  packs: StarterPack[];
+}
+
+export const DEFAULT_PERSONALIZE: PersonalizeConfig = { enabled: false, groups: [], topics: [], per_topic: 25, packs: [] };
+/** Caps on the personalize section, so the picker and catalog.json stay small. */
+export const MAX_CATALOG_TOPICS = 150;
+export const MAX_TOPIC_GROUPS = 24;
+export const MAX_PACKS = 24;
+export const MAX_PACK_TOPICS = 20;
+export const PACK_ID_RE = /^[a-z0-9][a-z0-9-]{0,39}$/;
+const MORE_TOPICS = "More topics";
 
 export const DENSITIES = ["comfortable", "compact", "list"] as const;
 export const SORTS = ["score", "newest", "stars", "rising"] as const;
@@ -295,6 +320,76 @@ function excludePatterns(c: Checker, v: unknown): ExcludePattern[] {
   return out;
 }
 
+/** Short display text from the config (group and pack names): one line, no markup characters needed. */
+function label(c: Checker, v: unknown, path: string, max: number): string | null {
+  if (typeof v !== "string" || !v.trim()) { c.err(path, "must be text"); return null; }
+  const s = v.trim();
+  if (s.length > max) { c.err(path, `at most ${max} characters`); return null; }
+  if (/[\u0000-\u001F\u007F-\u009F<>]/.test(s)) { c.err(path, "must be plain text on one line, without < or >"); return null; }
+  return s;
+}
+
+/**
+ * `site.personalize`: the catalog the Discover page can re-rank in the visitor's
+ * browser. `catalog.groups` (named topic lists for the picker), `catalog.topics`
+ * (more topics, shown under "More topics"), `catalog.per_topic`, and starter `packs`.
+ * The config's own topics are always part of the catalog.
+ */
+function personalizeSection(c: Checker, v: unknown, ownTopics: string[], excluded: string[]): PersonalizeConfig {
+  const p = c.section(v, "site.personalize");
+  c.unknownKeys(p, ["enabled", "catalog", "packs"], "site.personalize");
+  const out: PersonalizeConfig = { ...DEFAULT_PERSONALIZE, groups: [], topics: [], packs: [] };
+  out.enabled = c.bool(p.enabled, "site.personalize.enabled", false);
+  const cat = c.section(p.catalog, "site.personalize.catalog");
+  c.unknownKeys(cat, ["groups", "topics", "per_topic"], "site.personalize.catalog");
+  const topicOpts = { re: TOPIC_RE, lower: true, hint: "is not a GitHub topic (lowercase letters, digits and hyphens, max 50)" };
+  const all: string[] = [];
+  const add = (t: string) => { if (!all.includes(t)) all.push(t); };
+  if (cat.groups !== undefined && cat.groups !== null) {
+    if (!Array.isArray(cat.groups)) c.err("site.personalize.catalog.groups", "must be a list of { name, topics }");
+    else if (cat.groups.length > MAX_TOPIC_GROUPS) c.err("site.personalize.catalog.groups", `at most ${MAX_TOPIC_GROUPS} groups`);
+    else cat.groups.forEach((g, i) => {
+      const path = `site.personalize.catalog.groups[${i}]`;
+      if (!isObj(g)) { c.err(path, "must be a mapping with name: and topics:"); return; }
+      c.unknownKeys(g, ["name", "topics"], path);
+      const name = label(c, g.name, `${path}.name`, 60);
+      const list = c.strList(g.topics, `${path}.topics`, topicOpts).filter((t) => !all.includes(t));
+      if (!list.length) c.err(`${path}.topics`, "needs at least one topic not already in an earlier group");
+      if (name && list.length) { out.groups.push({ name, topics: list }); list.forEach(add); }
+    });
+  }
+  const more = [...c.strList(cat.topics, "site.personalize.catalog.topics", topicOpts), ...ownTopics].filter((t) => !all.includes(t));
+  const extra = [...new Set(more)];
+  if (extra.length) { out.groups.push({ name: MORE_TOPICS, topics: extra }); extra.forEach(add); }
+  if (all.length > MAX_CATALOG_TOPICS) c.err("site.personalize.catalog", `at most ${MAX_CATALOG_TOPICS} topics in all (got ${all.length})`);
+  const bad = all.filter((t) => excluded.includes(t));
+  if (bad.length) c.err("site.personalize.catalog", `topics also in exclude.topics: ${bad.join(", ")}`);
+  out.topics = all;
+  out.per_topic = c.int(cat.per_topic, "site.personalize.catalog.per_topic", DEFAULT_PERSONALIZE.per_topic, 1, 100);
+  if (out.enabled && !all.length) c.err("site.personalize.catalog", "needs topics when personalize is enabled");
+
+  if (p.packs !== undefined && p.packs !== null) {
+    if (!Array.isArray(p.packs)) c.err("site.personalize.packs", "must be a list of { id, name, topics }");
+    else if (p.packs.length > MAX_PACKS) c.err("site.personalize.packs", `at most ${MAX_PACKS} packs`);
+    else p.packs.forEach((k, i) => {
+      const path = `site.personalize.packs[${i}]`;
+      if (!isObj(k)) { c.err(path, "must be a mapping with id:, name: and topics:"); return; }
+      c.unknownKeys(k, ["id", "name", "topics"], path);
+      const id = typeof k.id === "string" && PACK_ID_RE.test(k.id) ? k.id : null;
+      if (!id) c.err(`${path}.id`, "must be lowercase letters, digits and hyphens (max 40)");
+      else if (out.packs.some((x) => x.id === id)) c.err(`${path}.id`, `"${id}" is used twice`);
+      const name = label(c, k.name, `${path}.name`, 40);
+      const list = c.strList(k.topics, `${path}.topics`, topicOpts);
+      const missing = list.filter((t) => !all.includes(t));
+      if (!list.length) c.err(`${path}.topics`, "needs at least one topic");
+      else if (list.length > MAX_PACK_TOPICS) c.err(`${path}.topics`, `at most ${MAX_PACK_TOPICS} topics`);
+      else if (missing.length) c.err(`${path}.topics`, `not in the catalog: ${missing.join(", ")}`);
+      else if (id && name && !out.packs.some((x) => x.id === id)) out.packs.push({ id, name, topics: list });
+    });
+  }
+  return out;
+}
+
 /** Validate an already-parsed object. Throws ConfigError listing every problem found. */
 export function validateConfig(raw: unknown, source = "interests.yml"): Config {
   const c = new Checker();
@@ -402,8 +497,11 @@ export function validateConfig(raw: unknown, source = "interests.yml"): Config {
   }
 
   const si = c.section(raw.site, "site");
-  c.unknownKeys(si, ["repo", "title", "url", "analytics", "layout"], "site");
-  const site: SiteConfig = { repo: null, title: "gitforage", url: null, analytics: null, layout: { ...DEFAULT_LAYOUT, fields: { ...DEFAULT_LAYOUT.fields } } };
+  c.unknownKeys(si, ["repo", "title", "url", "analytics", "layout", "personalize"], "site");
+  const site: SiteConfig = {
+    repo: null, title: "gitforage", url: null, analytics: null, layout: { ...DEFAULT_LAYOUT, fields: { ...DEFAULT_LAYOUT.fields } },
+    personalize: { ...DEFAULT_PERSONALIZE },
+  };
   if (si.repo !== undefined && si.repo !== null && si.repo !== "") {
     if (typeof si.repo !== "string" || !REPO_RE.test(si.repo) || !isSafeFullName(si.repo)) c.err("site.repo", "must look like owner/repo");
     else site.repo = si.repo;
@@ -439,6 +537,9 @@ export function validateConfig(raw: unknown, source = "interests.yml"): Config {
     const fi = c.section(lo.fields, "site.layout.fields");
     c.unknownKeys(fi, [...CARD_FIELDS], "site.layout.fields");
     for (const f of CARD_FIELDS) site.layout.fields[f] = c.bool(fi[f], `site.layout.fields.${f}`, true);
+  }
+  if (si.personalize !== undefined && si.personalize !== null) {
+    site.personalize = personalizeSection(c, si.personalize, topics, exclude.topics);
   }
 
   const fbk = c.section(raw.feedback, "feedback");
