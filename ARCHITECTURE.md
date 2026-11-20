@@ -27,7 +27,7 @@ packages/core     interests.yml schema, GitHub client (cache, rate limits),
                   sanitising of untrusted text
                   run digests, feedback intake from Keep/Skip issues
 packages/cli      gitforage preview | run | site | feedback
-packages/site     static portal and Atom feed
+packages/site     static portal (density, sort and filters) and Atom feed
 packages/notify   ntfy, Telegram, webhooks, email (coming)
 template/         what a portal repo starts from: interests.yml, feedback.yml,
                   the forage and feedback workflows
@@ -74,6 +74,7 @@ All text from GitHub is untrusted. Names are validated, text is escaped, and the
 1. Core + CLI (done).
 2. Better candidates (done): kin from your own stars, rising older repos, popularity scaled within each topic, regex and keyword exclusions, and `feedback.yml` in the score.
 3. Template repo, portal, Atom feed, feedback (done).
+   - 3.5 Customizable layout (done): Comfortable, Compact and List densities, card field switches, sort (score, newest, stars, rising) and source and topic filter chips, with defaults from `site.layout`.
 4. Optional LLM re-rank and notifiers.
 5. Public v0.1 with a demo portal.
 6. Later: GitLab and Codeberg sources, and a hosted version.

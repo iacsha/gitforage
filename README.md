@@ -61,12 +61,31 @@ Each card shows the repo (linked to GitHub), its description, a source badge (**
 
 The site is plain HTML and CSS with two small same-origin scripts. It uses system fonts, works on a phone, and loads nothing from other hosts unless you turn on analytics.
 
-Two buttons sit in the header:
+Two buttons sit in the header, next to the Density control (see [Layout](#layout)):
 
 - **Theme** cycles System, Light and Dark. System follows your device's setting. The choice is saved in your browser, and `assets/theme.js` applies it before the page paints, so there is no flash of the wrong theme.
 - **Language** ("English only" by default when `filters.spoken_languages: [en]`) shows or hides cards in other languages. Each card carries its detected language. The default is the config's, and it holds without JavaScript, because the hiding is plain CSS set by the server. The choice is saved like the theme.
 
 Both buttons stay hidden without JavaScript. If the browser blocks storage, the page still works and the choice lasts for that page.
+
+### Layout
+
+Visitors can change how the cards look. The portal's defaults come from `site.layout` in `interests.yml`:
+
+```yaml
+site:
+  layout:
+    density: compact      # comfortable (default), compact or list
+    sort: score           # score (default), newest, stars or rising
+    fields: { reasons: true, health: true, language: true, stars: true }
+```
+
+- **Density** sits next to Theme and Language. **Comfortable** is the full card. **Compact** uses smaller text and tighter cards, two to four columns on a wide screen (one on a phone), with descriptions cut to three lines and reasons to two rows. **List** is one dense row per repo: name, score, top reason, stars, language, and Keep and Skip. On a phone each row stacks into three short lines.
+- **View** turns card fields on or off: reasons, the maintainer line (Get involved), language and stars.
+- **Sort** orders by score, newest repo, stars, or **rising** (the points the star-velocity and star-growth rules gave). The keys `j` and `k` follow the order shown.
+- **Filter chips** narrow the list by source (New, Rising, Live fork, Like your stars) and by topic (your topics that appear on the page). Chips in one group widen the match, and groups narrow it: "Rising" plus "hl7" plus "fhir" shows rising repos in hl7 or fhir. The bar shows "N shown of M" and announces it to screen readers.
+
+Density, fields and sort are saved in the browser like the theme, and `theme.js` applies density and fields before the page paints. Filters last for the page. Without JavaScript the controls stay hidden and the page uses the config's density, fields and order, because the server writes them into the HTML.
 
 **Analytics** are off by default. For cookieless visit counts with [GoatCounter](https://www.goatcounter.com), create a GoatCounter site and add `analytics: { provider: goatcounter, code: <your code> }` under `site:`. The script is loaded with a subresource integrity hash, and only GoatCounter's own origins are added to the Content-Security-Policy.
 
@@ -317,7 +336,7 @@ Marks that come in through the portal also carry `from: visitor` or `from: owner
 
 gitforage handles two kinds of untrusted input: text from strangers' repos, and Keep/Skip issues from anyone on GitHub.
 
-**On the portal**, every page carries a strict Content-Security-Policy (`default-src 'none'; style-src 'self'; script-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'`, plus GoatCounter's origins only if you turn analytics on). There is no inline script, no inline style and no style attribute. The theme script that runs before paint is a separate same-origin file, not an inline snippet, so the policy needs no `unsafe-inline`. The scripts only read and write two fixed `localStorage` keys inside `try`, accept only known values from them, and never write markup. A card's `data-lang` is checked against the fixed list of language codes before output. Every dynamic string goes through one HTML escaper, applied automatically by the page templates, and every link is checked to be a GitHub link rebuilt from a validated name or a relative link inside the site. Digest files are validated again when the site is built, as if a stranger had written them. The tests render descriptions full of `<img onerror>`, `javascript:`, quote-breaking attributes and bidi characters and check that the output is inert. The Atom feed has its own XML escaper.
+**On the portal**, every page carries a strict Content-Security-Policy (`default-src 'none'; style-src 'self'; script-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'`, plus GoatCounter's origins only if you turn analytics on). There is no inline script, no inline style and no style attribute. The theme script that runs before paint is a separate same-origin file, not an inline snippet, so the policy needs no `unsafe-inline`. The scripts only read and write five fixed `localStorage` keys (theme, language, density, fields and sort) inside `try`, accept only known values from them, and never write markup. Every `data-*` attribute on a card comes from a fixed list (`data-lang` from the language codes, `data-sources` from the four sources), a strict topic pattern, or a number formatted by the build (score, stars, created date, momentum, rank), and a test fails on any `data-*` name outside the allow-list. Every dynamic string goes through one HTML escaper, applied automatically by the page templates, and every link is checked to be a GitHub link rebuilt from a validated name or a relative link inside the site. Digest files are validated again when the site is built, as if a stranger had written them. The tests render descriptions full of `<img onerror>`, `javascript:`, quote-breaking attributes and bidi characters and check that the output is inert. The Atom feed has its own XML escaper.
 
 **In the workflows**, every action is pinned by a full commit SHA, and gitforage itself by a full commit SHA. Each job gets only the permissions it needs: the forage job can write repo contents, the deploy job can publish Pages, the feedback job can write contents and issues. There is no `pull_request_target`, checkouts do not keep credentials, and no `${{ }}` expression is placed inside a `run:` script: issue data reaches gitforage only as JSON files, and only fixed values go through `env:`. Tests check these rules on every workflow.
 
