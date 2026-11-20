@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseDigest, validateConfig, withMode, type Digest, type DigestItem } from "@gitforage/core";
 import {
-  RULE_DESCRIPTIONS, atomFeed, csp, esc, feedbackUrl, href, html, pagesUrl, renderSite, stripUnsafe, trusted, writeSite, xmlEscape,
+  MAX_TOPIC_CHIPS, RULE_DESCRIPTIONS, atomFeed, chipTopics, csp, esc, feedbackUrl, href, html, momentum, numAttr, pagesUrl, renderSite, sortItems, stripUnsafe, trusted, writeSite, xmlEscape,
 } from "../src/index.ts";
 
 const NOW = "2026-11-22T12:00:00.000Z";
@@ -123,7 +123,7 @@ describe("the portal", () => {
     expect(index).toContain(">Live fork</span>");
     expect(index).toContain("No description.");
     expect(index).toContain("<li>your topic hl7</li>");
-    expect(index).toContain("<li>120 stars</li>");
+    expect(index).toContain('<li class="meta-stars">120 stars</li>');
     expect(index).toContain('pushed <time datetime="2026-11-20T00:00:00.000Z">Nov 20, 2026</time>');
     expect(index).not.toContain("Maintainers");
     const involved = files.get("involved.html")!;
@@ -369,22 +369,22 @@ describe("theme and language controls", () => {
       item("a/evil", { lang: `"><script>alert(1)</script>` }), item("a/proto", { lang: "__proto__" }),
     ];
     const only = renderSite(config({ filters: { spoken_languages: ["en"] } }), [digest("discover", items)], { now: NOW }).get("index.html")!;
-    expect(only).toContain('<html lang="en" data-lang-default="only">');
-    expect(only).toContain('<li data-lang="en" data-lang-match="yes">');
-    expect(only).toContain('<li data-lang="zh" data-lang-match="no">');
-    expect(only).toContain('<li data-lang="und" data-lang-match="yes">');
+    expect(only).toContain('<html lang="en" data-lang-default="only" data-density=');
+    expect(only).toContain('<li data-lang="en" data-lang-match="yes" ');
+    expect(only).toContain('<li data-lang="zh" data-lang-match="no" ');
+    expect(only).toContain('<li data-lang="und" data-lang-match="yes" ');
     expect(only.match(/data-lang="[^"]*"/g)!.sort()).toEqual(['data-lang="en"', 'data-lang="und"', 'data-lang="und"', 'data-lang="und"', 'data-lang="zh"']);
     expect(only).not.toContain("<script>alert");
     expect(only).toContain('aria-pressed="true"');
     expect(only).toContain("<span>English only</span>");
 
     const all = renderSite(config(), [digest("discover", items)], { now: NOW }).get("index.html")!;
-    expect(all).toContain('<html lang="en" data-lang-default="all">');
+    expect(all).toContain('<html lang="en" data-lang-default="all" data-density=');
     expect(all).toContain('aria-pressed="false"');
-    expect(all).toContain('<li data-lang="zh" data-lang-match="no">');
+    expect(all).toContain('<li data-lang="zh" data-lang-match="no" ');
 
     const strict = renderSite(config({ filters: { spoken_languages: ["en", "de"], drop_undetected: true } }), [digest("discover", items)], { now: NOW }).get("index.html")!;
-    expect(strict).toContain('<li data-lang="und" data-lang-match="no">');
+    expect(strict).toContain('<li data-lang="und" data-lang-match="no" ');
     expect(strict).toContain("<span>English and German only</span>");
   });
 
@@ -393,4 +393,184 @@ describe("theme and language controls", () => {
     const { digest: d } = parseDigest(text, "2026-11-22-discover.json");
     expect(d!.items.map((i) => i.lang)).toEqual(["und", "ja"]);
   });
+});
+
+describe("layout: density, fields, sort and filters", () => {
+  const assets = join(import.meta.dir, "..", "assets");
+  const items = [
+    item("a/low", { score: 4, stars: 900, created_at: "2026-11-10T00:00:00.000Z", sources: ["search"], topics: ["hl7", "mllp"] }),
+    item("a/high", { score: 20, stars: 30, created_at: "2026-06-01T00:00:00.000Z", sources: ["kin"], topics: ["fhir"],
+      reasons: [{ rule: "star_velocity", points: 2.5, text: "~40 stars a month" }, { rule: "topic_match", points: 3, text: "your topic fhir" }] }),
+    item("a/mid", { score: 9, stars: 300, created_at: "2025-01-01T00:00:00.000Z", sources: ["rising", "search"], topics: [], via_topics: ["hl7"],
+      reasons: [{ rule: "star_growth", points: 4, text: "~90 stars a month lately" }] }),
+  ];
+  const build = (layout?: Record<string, unknown>, its = items) =>
+    renderSite(config(layout ? { site: { repo: "acme/portal", title: "Acme portal", layout } } : {}), [digest("discover", its)], { now: NOW });
+  const order = (body: string) => [...body.matchAll(/<article class="card" id="r-([a-z-]+)"/g)].map((m) => m[1]);
+
+  /** data-* attributes the portal may emit. Anything else is a bug (or an injection). */
+  const ALLOWED_DATA = new Set([
+    "data-lang-default", "data-density", "data-sort-default", "data-fields-off", "data-lang", "data-lang-match", "data-sources", "data-topics",
+    "data-score", "data-newest", "data-stars", "data-rising", "data-rank", "data-card", "data-cards", "data-theme-toggle", "data-theme-label",
+    "data-lang-toggle", "data-pref-status", "data-density-group", "data-density-option", "data-view-bar", "data-sort-select", "data-field",
+    "data-filter", "data-value", "data-filter-count", "data-filter-clear", "data-filter-empty", "data-goatcounter",
+  ]);
+  const NUMERIC = ["data-score", "data-newest", "data-stars", "data-rising", "data-rank"];
+  const attrValues = (body: string, name: string) => [...body.matchAll(new RegExp(`\\s${name}="([^"]*)"`, "g"))].map((m) => m[1]);
+
+  test("defaults: comfortable, score order, every field on, written onto <html> so they hold without JavaScript", () => {
+    const index = build().get("index.html")!;
+    expect(index).toContain('data-density="comfortable" data-sort-default="score" data-fields-off="">');
+    expect(order(index)).toEqual(["a-high", "a-mid", "a-low"]);
+  });
+
+  test("the config picks the default density, sort and hidden fields", () => {
+    const index = build({ density: "list", sort: "stars", fields: { reasons: false, stars: false } }).get("index.html")!;
+    expect(index).toContain('data-density="list" data-sort-default="stars" data-fields-off="reasons stars">');
+    expect(order(index)).toEqual(["a-low", "a-mid", "a-high"]);
+    expect(index).toContain('<option value="stars" selected>Stars</option>');
+    expect(index).toContain('<input type="checkbox" data-field="reasons"> Reasons');
+    expect(index).toContain('<input type="checkbox" data-field="language" checked> Language');
+    expect(index).toContain('aria-checked="true" tabindex="0" aria-label="List"');
+    expect(order(build({ sort: "newest" }).get("index.html")!)).toEqual(["a-low", "a-high", "a-mid"]);
+    expect(order(build({ sort: "rising" }).get("index.html")!)).toEqual(["a-mid", "a-high", "a-low"]);
+  });
+
+  test("sortItems is stable and matches what site.js does (highest first, ties by build order)", () => {
+    const tied = [item("t/a", { score: 5 }), item("t/b", { score: 7 }), item("t/c", { score: 5 }), item("t/d", { score: Number.NaN })];
+    expect(sortItems(tied, "score").map((i) => i.full_name)).toEqual(["t/b", "t/a", "t/c", "t/d"]);
+    expect(momentum(items[1])).toBe(2.5);
+    const site = readFileSync(join(assets, "site.js"), "utf8");
+    expect(site).toContain('return num(b, key) - num(a, key) || num(a, "rank") - num(b, "rank");');
+  });
+
+  test("the density control is a labelled radio group, hidden until site.js runs", () => {
+    for (const [path, body] of build({ density: "compact" })) {
+      if (!path.endsWith(".html")) continue;
+      expect(body).toContain('<div class="density" role="radiogroup" aria-label="Density" data-density-group hidden>');
+      const radios = [...body.matchAll(/<button type="button" class="density-opt" role="radio" aria-checked="(true|false)" tabindex="(0|-1)" aria-label="(\w+)"[^>]*data-density-option="(\w+)">/g)];
+      expect(radios.map((m) => [m[1], m[2], m[3], m[4]])).toEqual([
+        ["false", "-1", "Comfortable", "comfortable"], ["true", "0", "Compact", "compact"], ["false", "-1", "List", "list"],
+      ]);
+    }
+  });
+
+  test("the view bar has sort, the View menu, the count and filter chips with ARIA, hidden until site.js runs", () => {
+    const index = build().get("index.html")!;
+    expect(index).toContain('<div class="view-bar" data-view-bar hidden>');
+    expect(index).toContain('<label class="view-sort"><span class="view-label">Sort</span> <select data-sort-select>');
+    expect(attrValues(index, "value").filter((v) => ["score", "newest", "stars", "rising"].includes(v))).toEqual(["score", "newest", "stars", "rising"]);
+    expect(index).toContain('<details class="view-menu">\n<summary>View</summary>\n<fieldset class="view-fields">\n<legend>Show on cards</legend>');
+    // No maintainer line on Discover, so no switch for it.
+    expect(index).not.toContain('data-field="health"');
+    expect(index).toContain('<p class="view-count" data-filter-count aria-live="polite" aria-atomic="true"></p>');
+    expect(index).toContain('<div class="filter-group" role="group" aria-label="Filter by source">');
+    expect(index).toContain('<div class="filter-group" role="group" aria-label="Filter by topic">');
+    const chips = [...index.matchAll(/<button type="button" class="filter-chip" data-filter="(\w+)" data-value="([a-z0-9-]+)" aria-pressed="false">([^<]+)<\/button>/g)].map((m) => m.slice(1).join(":"));
+    expect(chips).toEqual(["source:search:New", "source:rising:Rising", "source:kin:Like your stars", "topic:hl7:hl7", "topic:fhir:fhir"]);
+    expect(index).toContain('<button type="button" class="filter-clear" data-filter-clear hidden>Clear filters</button>');
+    expect(index).toContain('<p class="empty" data-filter-empty hidden>');
+    const involved = renderSite(config(), [digest("contribute", [item("c/h", { health: { outside_prs_90d: 2, issue_response: null } })])], { now: NOW }).get("involved.html")!;
+    expect(involved).toContain('<input type="checkbox" data-field="health" checked> Maintainer line');
+  });
+
+  test("cards carry their sources and the chip topics they match; topics come from the config, else the commonest", () => {
+    const index = build().get("index.html")!;
+    expect(index).toContain('data-sources="search rising" data-topics="hl7"');
+    expect(index).toContain('data-sources="search" data-topics="hl7"');
+    expect(index).not.toContain("mllp");
+    const bare = validateConfig({ seeds: ["a/b"] });
+    const many = [item("x/1", { topics: ["cli", "rust"] }), item("x/2", { topics: ["cli"] }), item("x/3", { topics: ["rust", "cli", "solo"] })];
+    expect(chipTopics(bare, many)).toEqual(["cli", "rust"]);
+    const lots = Array.from({ length: 30 }, (_, i) => `t${i}`);
+    expect(chipTopics(validateConfig({ topics: lots }), [item("x/4", { topics: lots })])).toHaveLength(MAX_TOPIC_CHIPS);
+    // Too many: the commonest on the page win, shown in config order.
+    const fourteen = lots.slice(0, 14);
+    const picked = chipTopics(validateConfig({ topics: fourteen }), [item("y/1", { topics: fourteen }), item("y/2", { topics: ["t13", "t12"] })]);
+    expect(picked).toHaveLength(MAX_TOPIC_CHIPS);
+    expect(picked.slice(-2)).toEqual(["t12", "t13"]);
+    expect(picked).toEqual([...picked].sort((x, y) => Number(x.slice(1)) - Number(y.slice(1))));
+  });
+
+  test("every data-* attribute is allow-listed, and the numeric ones are plain numbers", () => {
+    const weird = [
+      ...items,
+      item("w/nan", { score: Number.NaN, stars: Number.POSITIVE_INFINITY, created_at: "not a date", reasons: [{ rule: "star_growth", points: Number.NaN, text: "x" }] }),
+      item("w/huge", { score: 1e300, stars: -5, sources: ["evil" as any, "fork"], topics: [`"><b>`, "ok-topic", "__proto__"] }),
+    ];
+    for (const density of ["comfortable", "compact", "list"]) {
+      for (const [path, body] of build({ density }, weird)) {
+        if (!path.endsWith(".html")) continue;
+        const names = attributeNames(body).filter((n) => n.startsWith("data-"));
+        expect(names.filter((n) => !ALLOWED_DATA.has(n))).toEqual([]);
+        for (const n of NUMERIC) for (const v of attrValues(body, n)) expect([n, v, /^-?\d+(\.\d+)?$/.test(v)]).toEqual([n, v, true]);
+        for (const v of attrValues(body, "data-sources")) for (const t of v.split(" ").filter(Boolean)) expect(["search", "rising", "fork", "kin"]).toContain(t);
+        for (const v of attrValues(body, "data-topics")) for (const t of v.split(" ").filter(Boolean)) expect(t).toMatch(/^[a-z0-9][a-z0-9-]{0,49}$/);
+        for (const v of attrValues(body, "data-density")) expect(["comfortable", "compact", "list"]).toContain(v);
+        for (const v of attrValues(body, "data-density-option")) expect(["comfortable", "compact", "list"]).toContain(v);
+        for (const v of attrValues(body, "data-sort-default")) expect(["score", "newest", "stars", "rising"]).toContain(v);
+        for (const v of attrValues(body, "data-fields-off")) for (const t of v.split(" ").filter(Boolean)) expect(["reasons", "health", "language", "stars"]).toContain(t);
+        for (const v of attrValues(body, "data-field")) expect(["reasons", "health", "language", "stars"]).toContain(v);
+        for (const v of attrValues(body, "data-filter")) expect(["source", "topic"]).toContain(v);
+        for (const v of attrValues(body, "data-value")) expect(v).toMatch(/^[a-z0-9][a-z0-9-]{0,49}$/);
+      }
+    }
+    expect(numAttr(Number.NaN)).toBe("0");
+    expect(numAttr(1e300)).toBe("0");
+    expect(numAttr(-2.456, 2)).toBe("-2.46");
+    expect(numAttr("5" as any)).toBe("0");
+  });
+
+  test("a hostile description renders inert at every density, and the CSP never relaxes", () => {
+    const evil = item("evil/repo", { description: HOSTILE, language: `<svg onload=alert(7)>`, topics: ["hl7"],
+      reasons: [{ rule: "topic_match", points: 3, text: `<img src=x onerror=alert(8)>` }] });
+    for (const density of ["comfortable", "compact", "list"]) {
+      for (const sort of ["score", "newest", "stars", "rising"]) {
+        const files = build({ density, sort, fields: { reasons: false } }, [evil, ...items]);
+        for (const [path, body] of files) {
+          if (!path.endsWith(".html")) continue;
+          expect(body).not.toContain("<img");
+          expect(body).not.toContain("<script>alert");
+          expect(body.slice(body.indexOf("<main"))).not.toContain("<svg");
+          expect(attributeNames(body).filter((n) => n.startsWith("on") || n === "style" || n === "autofocus")).toEqual([]);
+          expect(body).not.toMatch(/[‪-‮⁦-⁩​]/);
+          const policy = /http-equiv="Content-Security-Policy" content="([^"]*)"/.exec(body)![1];
+          expect(policy).not.toContain("unsafe-inline");
+          expect(policy).toContain("script-src &#39;self&#39;;");
+          expect(body).not.toMatch(/<style\b/i);
+        }
+        expect(files.get("index.html")).toContain("&lt;img src=x onerror=&quot;alert(1)&quot;&gt;");
+      }
+    }
+  });
+
+  test("theme.js accepts only known densities and field names from storage; site.js checks every value", () => {
+    const theme = readFileSync(join(assets, "theme.js"), "utf8");
+    expect(theme).toContain('density === "comfortable" || density === "compact" || density === "list"');
+    expect(theme).toContain('var FIELDS = ["reasons", "health", "language", "stars"];');
+    expect(theme).toContain("fields.length <= 64");
+    const site = readFileSync(join(assets, "site.js"), "utf8");
+    expect(site).toContain("SORTS.indexOf(savedSort) >= 0");
+    expect(site).toContain('if ((kind !== "source" && kind !== "topic") || !value) return;');
+    expect(site).not.toMatch(/querySelector(All)?\([^)]*\+\s*(value|kind|key|f)\b/);
+  });
+
+  test("the stylesheet has every density, the field switches and visible focus", () => {
+    const css = readFileSync(join(assets, "site.css"), "utf8");
+    for (const sel of [':root[data-density="compact"] .cards', ':root[data-density="list"] .card', ':root[data-fields-off~="reasons"] .chips',
+      ':root[data-fields-off~="health"] .health', ':root[data-fields-off~="language"] .meta-lang', ':root[data-fields-off~="stars"] .meta-stars',
+      "-webkit-line-clamp: 3", ".filter-chip[aria-pressed=\"true\"]", ".density-opt[aria-checked=\"true\"]", ":focus-visible { outline: 3px solid var(--focus)"]) {
+      expect(css).toContain(sel);
+    }
+    // Columns never force a width wider than the screen (no horizontal scroll on a 360px phone).
+    expect(css).toContain("minmax(min(100%, 15rem), 1fr)");
+    expect(css).not.toMatch(/(?<!\()min-width:\s*(?:[2-9]\d|\d{3,})(?:\.\d+)?rem/);
+  });
+
+  for (const density of ["comfortable", "compact", "list"]) {
+    test(`build output snapshot: ${density}`, () => {
+      const index = build({ density }).get("index.html")!;
+      expect(index.slice(index.indexOf("<main"), index.indexOf("</main>"))).toMatchSnapshot();
+    });
+  }
 });

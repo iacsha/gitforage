@@ -2,7 +2,10 @@
 // both same-origin, under a strict Content-Security-Policy. No inline script, no
 // inline style, no style attributes. All dynamic text goes through `html` (escaped).
 
-import { isLanguageCode, isSafeFullName, LANGUAGES, normaliseBaseUrl, repoUrl, withMode, type Config, type Digest, type DigestItem, type Mode, type SiteConfig, type Weights } from "@gitforage/core";
+import {
+  CARD_FIELDS, DENSITIES, isLanguageCode, isSafeFullName, LANGUAGES, normaliseBaseUrl, repoUrl, SORTS, withMode,
+  type CardField, type Config, type Density, type Digest, type DigestItem, type Mode, type SiteConfig, type SortKey, type Weights,
+} from "@gitforage/core";
 import { href, html, trusted, type Html } from "./html.ts";
 
 /** The project's own repo, for "Run your own gitforage" and the About page. */
@@ -96,7 +99,7 @@ export function page(ctx: SiteContext, o: { title: string; description: string; 
   const link = (key: Nav, path: string, label: string) =>
     html`<li><a href="${href(o.root + path)}"${key === o.nav ? trusted(' aria-current="page"') : ""}>${label}</a></li>`;
   const doc = html`<!doctype html>
-<html lang="en" data-lang-default="${langPref(ctx.cfg).only ? "only" : "all"}">
+<html lang="en" data-lang-default="${langPref(ctx.cfg).only ? "only" : "all"}" ${layoutAttrs(site)}>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -182,7 +185,129 @@ function prefControls(cfg: Config): Html {
   return html`<div class="prefs">
 <button type="button" class="pref-btn" data-lang-toggle aria-pressed="${lp.only ? "true" : "false"}" title="Show only cards in these languages, or cards in every language" hidden>${LANG_ICON}<span>${lp.label}</span></button>
 <button type="button" class="pref-btn" data-theme-toggle aria-label="Theme: System. Switch to Light" hidden>${THEME_ICONS}<span data-theme-label>System</span></button>
+${densityControl(cfg.site.layout.density)}
 <p class="sr-only" data-pref-status aria-live="polite"></p>
+</div>`;
+}
+
+// ---- Layout: density, card fields, sort and filters ----------------------------------
+//
+// The server writes the config's defaults onto <html> (data-density, data-fields-off)
+// and renders the cards in the default sort order, so the page is complete with
+// JavaScript off. theme.js applies a visitor's saved density and fields before paint;
+// site.js wires up the controls, which stay hidden until it runs.
+//
+// Every data-* value below comes from a fixed list or is a number formatted here:
+// nothing from repo text reaches an attribute except through the escaper, and even
+// then only after matching a strict pattern.
+
+const DENSITY_NAMES: Record<Density, string> = { comfortable: "Comfortable", compact: "Compact", list: "List" };
+const SORT_NAMES: Record<SortKey, string> = { score: "Score", newest: "Newest", stars: "Stars", rising: "Rising" };
+const FIELD_NAMES: Record<CardField, string> = { reasons: "Reasons", health: "Maintainer line", language: "Language", stars: "Stars" };
+const SOURCE_FILTERS = ["search", "rising", "fork", "kin"] as const;
+const TOPIC_TOKEN_RE = /^[a-z0-9][a-z0-9-]{0,49}$/;
+/** Most topic chips shown above a list. */
+export const MAX_TOPIC_CHIPS = 12;
+
+/** The default layout attributes on <html>. Values are from fixed lists only. */
+function layoutAttrs(site: SiteConfig): Html {
+  const l = site.layout;
+  const density = DENSITIES.includes(l.density) ? l.density : "comfortable";
+  const sort = SORTS.includes(l.sort) ? l.sort : "score";
+  const off = CARD_FIELDS.filter((f) => l.fields[f] === false).join(" ");
+  return html`data-density="${density}" data-sort-default="${sort}" data-fields-off="${off}"`;
+}
+
+/** A plain decimal from a finite number, or "0". The output only ever matches /^-?\d+(\.\d+)?$/. */
+export function numAttr(v: unknown, digits = 0): string {
+  const n = typeof v === "number" && Number.isFinite(v) ? v : 0;
+  const s = Math.abs(n) >= 1e15 ? "0" : String(Number(n.toFixed(digits)));
+  return /^-?\d+(\.\d+)?$/.test(s) ? s : "0";
+}
+
+/** Days since 1970 for an ISO date, 0 when unknown. */
+const dayNumber = (iso: string) => {
+  const t = Date.parse(iso);
+  return Number.isFinite(t) ? Math.floor(t / 86_400_000) : 0;
+};
+
+/** Star momentum: the points the star_velocity and star_growth rules gave. */
+export function momentum(it: DigestItem): number {
+  return it.reasons.reduce((n, r) => (r.rule === "star_velocity" || r.rule === "star_growth") && Number.isFinite(r.points) ? n + r.points : n, 0);
+}
+
+const SORT_VALUE: Record<SortKey, (it: DigestItem) => number> = {
+  score: (it) => it.score,
+  newest: (it) => dayNumber(it.created_at),
+  stars: (it) => it.stars,
+  rising: momentum,
+};
+
+/** Items in a sort order, highest first; ties keep their original order. site.js sorts the same way. */
+export function sortItems<T>(items: T[], key: SortKey, of: (x: T) => DigestItem = (x) => x as unknown as DigestItem): T[] {
+  const value = SORT_VALUE[key];
+  return items.map((x, i) => ({ x, i, v: Number(numAttr(value(of(x)), 2)) }))
+    .sort((a, b) => b.v - a.v || a.i - b.i)
+    .map((e) => e.x);
+}
+
+const itemTopics = (it: DigestItem) => [...new Set([...it.topics, ...it.via_topics])].filter((t) => TOPIC_TOKEN_RE.test(t));
+
+/**
+ * The topics offered as filter chips for a list: the config's topics that appear on
+ * it (the most common ones when there are too many, kept in config order), or, for
+ * a portal without topics, the most common ones on the page.
+ */
+export function chipTopics(cfg: Config, items: DigestItem[]): string[] {
+  const counts = new Map<string, number>();
+  for (const it of items) for (const t of itemTopics(it)) counts.set(t, (counts.get(t) ?? 0) + 1);
+  const mine = cfg.topics.filter((t) => counts.has(t));
+  if (mine.length) {
+    const keep = new Set([...mine].sort((a, b) => counts.get(b)! - counts.get(a)!).slice(0, MAX_TOPIC_CHIPS));
+    return mine.filter((t) => keep.has(t));
+  }
+  return [...counts.entries()].filter(([, n]) => n > 1).sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)).slice(0, MAX_TOPIC_CHIPS).map(([t]) => t);
+}
+
+const DENSITY_ICONS: Record<Density, string> = {
+  comfortable: icon("icon", `<rect x="3" y="3" width="18" height="8" rx="2"/><rect x="3" y="13" width="18" height="8" rx="2"/>`),
+  compact: icon("icon", `<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>`),
+  list: icon("icon", `<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>`),
+};
+
+/** Comfortable, Compact and List: a radio group of buttons, hidden until site.js runs. */
+function densityControl(current: Density): Html {
+  return html`<div class="density" role="radiogroup" aria-label="Density" data-density-group hidden>
+${DENSITIES.map((d) => html`<button type="button" class="density-opt" role="radio" aria-checked="${d === current ? "true" : "false"}" tabindex="${d === current ? "0" : "-1"}" aria-label="${DENSITY_NAMES[d]}" title="${`${DENSITY_NAMES[d]} layout`}" data-density-option="${d}">${trusted(DENSITY_ICONS[d])}<span class="density-text" aria-hidden="true">${DENSITY_NAMES[d]}</span></button>`)}
+</div>`;
+}
+
+/** Sort, the View menu and the filter chips above a list. Hidden until site.js runs. */
+function viewBar(ctx: SiteContext, items: DigestItem[], topics: string[], hasHealth: boolean): Html {
+  const l = ctx.cfg.site.layout;
+  const sources = SOURCE_FILTERS.filter((s) => items.some((it) => it.sources.includes(s)));
+  const fields = CARD_FIELDS.filter((f) => f !== "health" || hasHealth);
+  const chip = (attr: "source" | "topic", value: string, label: string) =>
+    html`<button type="button" class="filter-chip" data-filter="${attr}" data-value="${value}" aria-pressed="false">${label}</button>`;
+  return html`<div class="view-bar" data-view-bar hidden>
+<div class="view-row">
+<label class="view-sort"><span class="view-label">Sort</span> <select data-sort-select>
+${SORTS.map((k) => html`<option value="${k}"${k === l.sort ? trusted(" selected") : ""}>${SORT_NAMES[k]}</option>`)}
+</select></label>
+<details class="view-menu">
+<summary>View</summary>
+<fieldset class="view-fields">
+<legend>Show on cards</legend>
+${fields.map((f) => html`<label><input type="checkbox" data-field="${f}"${l.fields[f] ? trusted(" checked") : ""}> ${FIELD_NAMES[f]}</label>`)}
+</fieldset>
+</details>
+<p class="view-count" data-filter-count aria-live="polite" aria-atomic="true"></p>
+</div>
+${sources.length > 1 || topics.length ? html`<div class="filter-row">
+${sources.length > 1 ? html`<div class="filter-group" role="group" aria-label="Filter by source"><span class="view-label" aria-hidden="true">Source</span>${sources.map((s) => chip("source", s, SOURCE_BADGE[s].label))}</div>` : ""}
+${topics.length ? html`<div class="filter-group" role="group" aria-label="Filter by topic"><span class="view-label" aria-hidden="true">Topic</span>${topics.map((t) => chip("topic", t, t))}</div>` : ""}
+<button type="button" class="filter-clear" data-filter-clear hidden>Clear filters</button>
+</div>` : ""}
 </div>`;
 }
 
@@ -196,7 +321,7 @@ function healthLine(it: DigestItem): Html {
   return html`<p class="health"><span class="health-label">Maintainers</span> ${parts.join(" · ")}</p>`;
 }
 
-export function card(ctx: SiteContext, it: DigestItem, o: { health: boolean; listed?: string }): Html {
+export function card(ctx: SiteContext, it: DigestItem, o: { health: boolean; listed?: string; rank?: number; topics?: string[] }): Html {
   const url = repoUrl(it.full_name);
   if (!url) return trusted("");
   const [owner, name] = it.full_name.split("/");
@@ -212,19 +337,22 @@ export function card(ctx: SiteContext, it: DigestItem, o: { health: boolean; lis
     : trusted("");
   const lang = isLanguageCode(it.lang) ? it.lang : "und";
   const match = langMatches(ctx.cfg, lang) ? "yes" : "no";
-  return html`<li data-lang="${lang}" data-lang-match="${match}">
+  const sources = SOURCE_FILTERS.filter((s) => it.sources.includes(s)).join(" ");
+  const topics = itemTopics(it).filter((t) => o.topics?.includes(t)).join(" ");
+  return html`<li data-lang="${lang}" data-lang-match="${match}" data-sources="${sources}" data-topics="${topics}" data-score="${numAttr(it.score, 2)}" data-newest="${numAttr(dayNumber(it.created_at))}" data-stars="${numAttr(it.stars)}" data-rising="${numAttr(momentum(it), 2)}" data-rank="${numAttr(o.rank ?? 0)}">
 <article class="card" id="${id}" data-card aria-labelledby="${`${id}-t`}">
 <div class="card-head">
 <h2 class="card-title" id="${`${id}-t`}"><a href="${href(url)}"><span class="owner">${owner}/</span>${name}</a></h2>
+<p class="score" title="Fit score: the sum of the rule points"><span class="sr-only">Score </span>${numAttr(it.score, 1)}</p>
 <p class="badges">${badges.map((b) => html`<span class="${`badge ${b.cls}`}" title="${b.title}">${b.label}</span>`)}</p>
 </div>
 ${it.description ? html`<p class="desc">${it.description}</p>` : html`<p class="desc desc-none">No description.</p>`}
 ${chips.length ? html`<ul class="chips" aria-label="Why it is here">${chips.map((r) => html`<li>${r.text}</li>`)}</ul>` : ""}
 <ul class="meta">
-<li>${plural(it.stars, "star")}</li>
-${it.language ? html`<li>${it.language}</li>` : ""}
-${pushed ? html`<li>pushed <time datetime="${it.pushed_at}">${pushed}</time></li>` : ""}
-${o.listed ? html`<li>listed <time datetime="${o.listed}">${fmtDate(o.listed)}</time></li>` : ""}
+<li class="meta-stars">${plural(it.stars, "star")}</li>
+${it.language ? html`<li class="meta-lang">${it.language}</li>` : ""}
+${pushed ? html`<li class="meta-pushed">pushed <time datetime="${it.pushed_at}">${pushed}</time></li>` : ""}
+${o.listed ? html`<li class="meta-listed">listed <time datetime="${o.listed}">${fmtDate(o.listed)}</time></li>` : ""}
 </ul>
 ${o.health ? healthLine(it) : ""}
 ${actions}
@@ -232,10 +360,16 @@ ${actions}
 </li>`;
 }
 
-function cardList(ctx: SiteContext, items: DigestItem[], o: { health: boolean; listed?: (it: DigestItem) => string }): Html {
-  return html`<ol class="cards">
-${items.map((it) => card(ctx, it, { health: o.health, listed: o.listed?.(it) }))}
-</ol>`;
+function cardList(ctx: SiteContext, items: DigestItem[], o: { health: boolean; listed?: (it: DigestItem) => string; pageTopic?: string }): Html {
+  // On a topic's own page every card has that topic, so it is not offered as a chip.
+  const topics = chipTopics(ctx.cfg, items).filter((t) => t !== o.pageTopic);
+  const hasHealth = o.health && items.some((it) => healthLine(it).value !== "");
+  const ranked = sortItems(items.map((it, rank) => ({ it, rank })), ctx.cfg.site.layout.sort, (x) => x.it);
+  return html`${viewBar(ctx, items, topics, hasHealth)}
+<ol class="cards" data-cards>
+${ranked.map(({ it, rank }) => card(ctx, it, { health: o.health, listed: o.listed?.(it), rank, topics }))}
+</ol>
+<p class="empty" data-filter-empty hidden>No cards match these filters. <button type="button" class="filter-clear" data-filter-clear>Clear filters</button></p>`;
 }
 
 const emptyState = (text: string) => html`<p class="empty">${text}</p>`;
@@ -301,9 +435,9 @@ export function topicPage(ctx: SiteContext, digests: Digest[], topic: string): s
   const list = itemsForTopic(digests, topic);
   const body = html`<p class="crumbs"><a href="${href("index.html")}">Topics</a></p>
 <h1>${topic}</h1>
-<p class="lede">Repos listed for <strong>${topic}</strong>, newest first.</p>
+<p class="lede">Repos listed for <strong>${topic}</strong> on every run so far.</p>
 ${list.length
-    ? cardList(ctx, list.map((x) => x.item), { health: false, listed: (it) => list.find((x) => x.item === it)!.listed })
+    ? cardList(ctx, list.map((x) => x.item), { health: false, listed: (it) => list.find((x) => x.item === it)!.listed, pageTopic: topic })
     : emptyState("Nothing listed for this topic yet.")}`;
   return page(ctx, { title: topic, description: `Repos for the ${topic} topic`, root: "../", nav: "topics", body });
 }
