@@ -11,7 +11,7 @@ import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 export const PLACEHOLDER_SHA = "0".repeat(40);
-const LINE_RE = /^(\s*GITFORAGE_SHA:\s*)"[0-9a-f]{40}"\s*$/m;
+const LINE_RE = /^([ \t]*GITFORAGE_SHA:[ \t]*)"[0-9a-f]{40}"[ \t]*$/m;
 
 /** Replace the pinned SHA in one workflow's text. Throws if the line is missing. */
 export function pinWorkflow(text: string, sha: string): string {
