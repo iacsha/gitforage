@@ -92,7 +92,29 @@ export interface SiteConfig {
   url: string | null;
   /** Optional cookieless analytics. Off unless set. */
   analytics: { provider: "goatcounter"; code: string } | null;
+  /** The portal's default layout. Visitors can change it; their choice is kept in their browser. */
+  layout: LayoutConfig;
 }
+
+export const DENSITIES = ["comfortable", "compact", "list"] as const;
+export const SORTS = ["score", "newest", "stars", "rising"] as const;
+export const CARD_FIELDS = ["reasons", "health", "language", "stars"] as const;
+export type Density = (typeof DENSITIES)[number];
+export type SortKey = (typeof SORTS)[number];
+export type CardField = (typeof CARD_FIELDS)[number];
+
+export interface LayoutConfig {
+  density: Density;
+  sort: SortKey;
+  /** Which card fields show by default. */
+  fields: Record<CardField, boolean>;
+}
+
+export const DEFAULT_LAYOUT: LayoutConfig = {
+  density: "comfortable",
+  sort: "score",
+  fields: { reasons: true, health: true, language: true, stars: true },
+};
 
 export interface FeedbackConfig {
   /** Accept Keep and Skip issues from people who are not owners or collaborators of the portal repo. */
@@ -380,8 +402,8 @@ export function validateConfig(raw: unknown, source = "interests.yml"): Config {
   }
 
   const si = c.section(raw.site, "site");
-  c.unknownKeys(si, ["repo", "title", "url", "analytics"], "site");
-  const site: SiteConfig = { repo: null, title: "gitforage", url: null, analytics: null };
+  c.unknownKeys(si, ["repo", "title", "url", "analytics", "layout"], "site");
+  const site: SiteConfig = { repo: null, title: "gitforage", url: null, analytics: null, layout: { ...DEFAULT_LAYOUT, fields: { ...DEFAULT_LAYOUT.fields } } };
   if (si.repo !== undefined && si.repo !== null && si.repo !== "") {
     if (typeof si.repo !== "string" || !REPO_RE.test(si.repo) || !isSafeFullName(si.repo)) c.err("site.repo", "must look like owner/repo");
     else site.repo = si.repo;
@@ -402,6 +424,21 @@ export function validateConfig(raw: unknown, source = "interests.yml"): Config {
     if (an.provider !== "goatcounter") c.err("site.analytics.provider", "must be goatcounter (the only one supported)");
     else if (typeof an.code !== "string" || !GOATCOUNTER_CODE_RE.test(an.code)) c.err("site.analytics.code", "must be your GoatCounter code (lowercase letters, digits and hyphens)");
     else site.analytics = { provider: "goatcounter", code: an.code };
+  }
+  if (si.layout !== undefined && si.layout !== null) {
+    const lo = c.section(si.layout, "site.layout");
+    c.unknownKeys(lo, ["density", "sort", "fields"], "site.layout");
+    if (lo.density !== undefined && lo.density !== null) {
+      if (!(DENSITIES as readonly unknown[]).includes(lo.density)) c.err("site.layout.density", `must be one of ${DENSITIES.join(", ")}`);
+      else site.layout.density = lo.density as Density;
+    }
+    if (lo.sort !== undefined && lo.sort !== null) {
+      if (!(SORTS as readonly unknown[]).includes(lo.sort)) c.err("site.layout.sort", `must be one of ${SORTS.join(", ")}`);
+      else site.layout.sort = lo.sort as SortKey;
+    }
+    const fi = c.section(lo.fields, "site.layout.fields");
+    c.unknownKeys(fi, [...CARD_FIELDS], "site.layout.fields");
+    for (const f of CARD_FIELDS) site.layout.fields[f] = c.bool(fi[f], `site.layout.fields.${f}`, true);
   }
 
   const fbk = c.section(raw.feedback, "feedback");

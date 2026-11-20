@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { CONTRIBUTE_WEIGHTS, ConfigError, DEFAULT_LIMITS, DEFAULT_WEIGHTS, parseConfig, validateConfig } from "../src/index.ts";
+import { CONTRIBUTE_WEIGHTS, ConfigError, DEFAULT_LAYOUT, DEFAULT_LIMITS, DEFAULT_WEIGHTS, parseConfig, validateConfig } from "../src/index.ts";
 
 const problems = (fn: () => unknown): string[] => {
   try { fn(); } catch (e) { if (e instanceof ConfigError) return e.problems; throw e; }
@@ -121,5 +121,43 @@ llm:
 
   test("a list given as a string is caught", () => {
     expect(problems(() => validateConfig({ topics: "hl7" }))).toContainEqual(expect.stringContaining("topics: must be a list"));
+  });
+});
+
+describe("site.layout", () => {
+  test("defaults to comfortable, score and every field on", () => {
+    expect(validateConfig({ seeds: ["a/b"] }).site.layout).toEqual(DEFAULT_LAYOUT);
+    expect(DEFAULT_LAYOUT).toEqual({ density: "comfortable", sort: "score", fields: { reasons: true, health: true, language: true, stars: true } });
+  });
+
+  test("takes a density, a sort and field switches; unset fields stay on", () => {
+    const c = parseConfig("seeds: [a/b]\nsite:\n  layout:\n    density: compact\n    sort: rising\n    fields: { health: false, stars: false }\n");
+    expect(c.site.layout).toEqual({ density: "compact", sort: "rising", fields: { reasons: true, health: false, language: true, stars: false } });
+    expect(validateConfig({ seeds: ["a/b"], site: { layout: { density: "list" } } }).site.layout.density).toBe("list");
+  });
+
+  test("does not share the default object between configs", () => {
+    const a = validateConfig({ seeds: ["a/b"] });
+    a.site.layout.fields.reasons = false;
+    expect(validateConfig({ seeds: ["a/b"] }).site.layout.fields.reasons).toBe(true);
+    expect(DEFAULT_LAYOUT.fields.reasons).toBe(true);
+  });
+
+  test("refuses unknown values and keys with clear messages", () => {
+    expect(problems(() => validateConfig({ seeds: ["a/b"], site: { layout: { density: "tiny", sort: "random", fields: { stars: "no", avatar: true }, columns: 4 } } }))).toEqual([
+      "site.layout.columns: unknown key",
+      "site.layout.density: must be one of comfortable, compact, list",
+      "site.layout.sort: must be one of score, newest, stars, rising",
+      "site.layout.fields.avatar: unknown key",
+      "site.layout.fields.stars: must be true or false",
+    ]);
+    expect(problems(() => validateConfig({ seeds: ["a/b"], site: { layout: "compact" } }))).toEqual(["site.layout: must be a mapping (key: value lines)"]);
+    expect(problems(() => validateConfig({ seeds: ["a/b"], site: { layout: { density: "<script>" } } }))).toEqual(["site.layout.density: must be one of comfortable, compact, list"]);
+  });
+
+  test("the template documents it", () => {
+    const t = readFileSync(join(import.meta.dir, "..", "..", "..", "template", "interests.yml"), "utf8");
+    expect(t).toContain("# layout:");
+    expect(t).toContain("density: comfortable");
   });
 });

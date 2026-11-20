@@ -159,6 +159,9 @@ See [`interests.example.yml`](interests.example.yml). You need at least one of `
 | `site.title` | `gitforage` | The portal's name. |
 | `site.url` | Pages URL | The public address, used in the feed. Defaults to `https://<owner>.github.io/<repo>/`. |
 | `site.analytics` | off | `{ provider: goatcounter, code: <your code> }` for cookieless visit counts. |
+| `site.layout.density` | `comfortable` | The default card layout: `comfortable`, `compact` (smaller text, more tiles) or `list` (one row per repo). See [Layout](#layout). |
+| `site.layout.sort` | `score` | The default order: `score`, `newest`, `stars` or `rising`. |
+| `site.layout.fields` | all `true` | Which card fields show by default: `{ reasons, health, language, stars }`, each `true` or `false`. |
 | `feedback.visitors` | `true` | Accept Keep and Skip from people who are not owners or collaborators. |
 | `feedback.visitor_weight` | `0.25` | How much a visitor mark counts next to an owner mark (0 to 1). |
 | `feedback.max_per_user` | `3` | Most marks one person can add a day. Owners are not limited. |

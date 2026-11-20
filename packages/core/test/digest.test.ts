@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { loadDigests, parseDigest, saveDigest, scoreCandidate, toDigestItems, validateConfig, type Digest } from "../src/index.ts";
+import { DEFAULT_LAYOUT, loadDigests, parseDigest, saveDigest, scoreCandidate, toDigestItems, validateConfig, type Digest } from "../src/index.ts";
 import { NOW, cand, cfg } from "./helpers.ts";
 
 const scored = (full: string, o = {}) => scoreCandidate(cand(full, { via_topics: ["hl7"], ...o }, { topics: ["hl7"] }), cfg(), NOW);
@@ -64,14 +64,14 @@ describe("digests", () => {
 describe("config: site and feedback sections", () => {
   test("defaults", () => {
     const c = validateConfig({ topics: ["hl7"] });
-    expect(c.site).toEqual({ repo: null, title: "gitforage", url: null, analytics: null });
+    expect(c.site).toEqual({ repo: null, title: "gitforage", url: null, analytics: null, layout: DEFAULT_LAYOUT });
     expect(c.feedback).toEqual({ visitors: true, visitor_weight: 0.25, max_per_user: 3, min_account_age_days: 30 });
   });
 
   test("valid values", () => {
     const c = validateConfig({ topics: ["hl7"], site: { repo: "acme/portal", title: " Acme ", url: "https://forage.example.org/demo" },
       feedback: { visitors: false, visitor_weight: 0.5, max_per_user: 5, min_account_age_days: 0 } });
-    expect(c.site).toEqual({ repo: "acme/portal", title: "Acme", url: "https://forage.example.org/demo/", analytics: null });
+    expect(c.site).toEqual({ repo: "acme/portal", title: "Acme", url: "https://forage.example.org/demo/", analytics: null, layout: DEFAULT_LAYOUT });
     expect(c.feedback).toEqual({ visitors: false, visitor_weight: 0.5, max_per_user: 5, min_account_age_days: 0 });
   });
 
