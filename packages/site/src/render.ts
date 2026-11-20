@@ -7,6 +7,7 @@ import {
   type CardField, type Config, type Density, type Digest, type DigestItem, type Mode, type SiteConfig, type SortKey, type Weights,
 } from "@gitforage/core";
 import { href, html, trusted, type Html } from "./html.ts";
+import { localMarks, personalBar, personalList, pickDialog } from "./personalize.ts";
 
 /** The project's own repo, for "Run your own gitforage" and the About page. */
 export const PROJECT_URL = "https://github.com/iacsha/gitforage";
@@ -67,9 +68,17 @@ const fmtNum = (n: number) => Math.round(n).toLocaleString("en-US");
 const plural = (n: number, one: string, many = `${one}s`) => `${fmtNum(n)} ${n === 1 ? one : many}`;
 const anchor = (full: string) => `r-${full.replace("/", "-")}`;
 
-/** The Content-Security-Policy for every page. Analytics origins are added only when configured. */
-export function csp(site: SiteConfig): string {
+/** The GitHub API origin the visitor's browser may call for "Use my GitHub stars". */
+export const GITHUB_API_ORIGIN = "https://api.github.com";
+
+/**
+ * The Content-Security-Policy for every page. Analytics origins are added only when
+ * configured. A page with the topic picker (`personalize`) may also connect to itself
+ * (to read catalog.json) and to api.github.com (for the visitor's stars), nothing else.
+ */
+export function csp(site: SiteConfig, o: { personalize?: boolean } = {}): string {
   const script = ["'self'"], img = ["'self'", "data:"], connect: string[] = [];
+  if (o.personalize) connect.push("'self'", GITHUB_API_ORIGIN);
   if (site.analytics) {
     const endpoint = `https://${site.analytics.code}.goatcounter.com`;
     script.push(new URL(GOATCOUNTER_SCRIPT).origin);
@@ -94,7 +103,7 @@ function analyticsTag(site: SiteConfig): Html {
 
 type Nav = "discover" | "contribute" | "topics" | "archive" | "about" | null;
 
-export function page(ctx: SiteContext, o: { title: string; description: string; root: string; nav: Nav; body: Html }): string {
+export function page(ctx: SiteContext, o: { title: string; description: string; root: string; nav: Nav; body: Html; personalize?: boolean }): string {
   const site = ctx.cfg.site;
   const link = (key: Nav, path: string, label: string) =>
     html`<li><a href="${href(o.root + path)}"${key === o.nav ? trusted(' aria-current="page"') : ""}>${label}</a></li>`;
@@ -103,7 +112,7 @@ export function page(ctx: SiteContext, o: { title: string; description: string; 
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="${csp(site)}">
+<meta http-equiv="Content-Security-Policy" content="${csp(site, { personalize: o.personalize })}">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <title>${o.title === site.title ? site.title : `${o.title} · ${site.title}`}</title>
@@ -113,7 +122,8 @@ export function page(ctx: SiteContext, o: { title: string; description: string; 
 <link rel="stylesheet" href="${href(`${o.root}assets/site.css`)}">
 <link rel="alternate" type="application/atom+xml" title="${`${site.title} feed`}" href="${href(`${o.root}feed.xml`)}">
 <script src="${href(`${o.root}assets/site.js`)}" defer></script>
-${analyticsTag(site)}
+${o.personalize ? html`<script type="module" src="${href(`${o.root}assets/personalize.js`)}"></script>
+` : ""}${analyticsTag(site)}
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
@@ -321,7 +331,7 @@ function healthLine(it: DigestItem): Html {
   return html`<p class="health"><span class="health-label">Maintainers</span> ${parts.join(" · ")}</p>`;
 }
 
-export function card(ctx: SiteContext, it: DigestItem, o: { health: boolean; listed?: string; rank?: number; topics?: string[] }): Html {
+export function card(ctx: SiteContext, it: DigestItem, o: { health: boolean; listed?: string; rank?: number; topics?: string[]; local?: boolean }): Html {
   const url = repoUrl(it.full_name);
   if (!url) return trusted("");
   const [owner, name] = it.full_name.split("/");
@@ -339,7 +349,7 @@ export function card(ctx: SiteContext, it: DigestItem, o: { health: boolean; lis
   const match = langMatches(ctx.cfg, lang) ? "yes" : "no";
   const sources = SOURCE_FILTERS.filter((s) => it.sources.includes(s)).join(" ");
   const topics = itemTopics(it).filter((t) => o.topics?.includes(t)).join(" ");
-  return html`<li data-lang="${lang}" data-lang-match="${match}" data-sources="${sources}" data-topics="${topics}" data-score="${numAttr(it.score, 2)}" data-newest="${numAttr(dayNumber(it.created_at))}" data-stars="${numAttr(it.stars)}" data-rising="${numAttr(momentum(it), 2)}" data-rank="${numAttr(o.rank ?? 0)}">
+  return html`<li data-lang="${lang}" data-lang-match="${match}" data-sources="${sources}" data-topics="${topics}" data-score="${numAttr(it.score, 2)}" data-newest="${numAttr(dayNumber(it.created_at))}" data-stars="${numAttr(it.stars)}" data-rising="${numAttr(momentum(it), 2)}" data-rank="${numAttr(o.rank ?? 0)}"${o.local ? html` data-repo="${it.full_name}"` : ""}>
 <article class="card" id="${id}" data-card aria-labelledby="${`${id}-t`}">
 <div class="card-head">
 <h2 class="card-title" id="${`${id}-t`}"><a href="${href(url)}"><span class="owner">${owner}/</span>${name}</a></h2>
@@ -356,18 +366,19 @@ ${o.listed ? html`<li class="meta-listed">listed <time datetime="${o.listed}">${
 </ul>
 ${o.health ? healthLine(it) : ""}
 ${actions}
-</article>
+${o.local ? html`${localMarks(it.full_name)}
+` : ""}</article>
 </li>`;
 }
 
-function cardList(ctx: SiteContext, items: DigestItem[], o: { health: boolean; listed?: (it: DigestItem) => string; pageTopic?: string }): Html {
+function cardList(ctx: SiteContext, items: DigestItem[], o: { health: boolean; listed?: (it: DigestItem) => string; pageTopic?: string; local?: boolean }): Html {
   // On a topic's own page every card has that topic, so it is not offered as a chip.
   const topics = chipTopics(ctx.cfg, items).filter((t) => t !== o.pageTopic);
   const hasHealth = o.health && items.some((it) => healthLine(it).value !== "");
   const ranked = sortItems(items.map((it, rank) => ({ it, rank })), ctx.cfg.site.layout.sort, (x) => x.it);
   return html`${viewBar(ctx, items, topics, hasHealth)}
 <ol class="cards" data-cards>
-${ranked.map(({ it, rank }) => card(ctx, it, { health: o.health, listed: o.listed?.(it), rank, topics }))}
+${ranked.map(({ it, rank }) => card(ctx, it, { health: o.health, listed: o.listed?.(it), rank, topics, local: o.local }))}
 </ol>
 <p class="empty" data-filter-empty hidden>No cards match these filters. <button type="button" class="filter-clear" data-filter-clear>Clear filters</button></p>`;
 }
@@ -378,13 +389,23 @@ export function modePage(ctx: SiteContext, mode: Mode, latest: Digest | null): s
   const intro = latest
     ? html`<p class="run-line">From the run on <time datetime="${latest.generated_at}">${fmtDate(latest.generated_at)}</time>: ${plural(latest.items.length, "repo")}. <a href="${href(`archive/${latest.date}-${mode}.html`)}">Permalink</a> · <a href="${href("archive/index.html")}">Past digests</a></p>`
     : "";
+  // The topic picker lives on the Discover page only. The default digest stays the
+  // server-rendered list (all a visitor without JavaScript sees); personalize.js swaps
+  // it for the personalized list when the visitor picks topics.
+  const personal = mode === "discover" && ctx.cfg.site.personalize.enabled;
+  const list = latest && latest.items.length
+    ? cardList(ctx, latest.items, { health: mode === "contribute", local: personal })
+    : emptyState(latest ? "Nothing new on the last run. Everything it found had been listed before." : "No digest yet. The first scheduled run fills this page.");
   const body = html`<h1>${MODE_TITLE[mode]}</h1>
 <p class="lede">${MODE_LEDE[mode]}</p>
 ${intro}
-${latest && latest.items.length
-    ? cardList(ctx, latest.items, { health: mode === "contribute" })
-    : emptyState(latest ? "Nothing new on the last run. Everything it found had been listed before." : "No digest yet. The first scheduled run fills this page.")}`;
-  return page(ctx, { title: MODE_TITLE[mode], description: MODE_LEDE[mode], root: "", nav: mode, body });
+${personal ? html`${personalBar()}
+<div data-default-view>
+${list}
+</div>
+${personalList()}
+${pickDialog(ctx.cfg)}` : list}`;
+  return page(ctx, { title: MODE_TITLE[mode], description: MODE_LEDE[mode], root: "", nav: mode, body, personalize: personal });
 }
 
 export function digestPage(ctx: SiteContext, d: Digest): string {
@@ -526,6 +547,7 @@ ${portal
     : html`<p>Keep and Skip buttons appear once the portal knows its repo (<code>site.repo</code>, or the GitHub Action fills it in).</p>`}
 <h2>Privacy</h2>
 ${analytics}
+${cfg.site.personalize.enabled ? html`<p>"Pick your topics" on the Discover page runs in your browser. Your picks, your "More like this" and "Hide" marks, and the topics found from your stars are kept in this browser's storage and nowhere else. "Use my GitHub stars" makes your browser ask GitHub's API for that user's public stars; gitforage never sees the username, and only the topics are kept. GitHub allows 60 such lookups an hour from one network.${cfg.site.analytics ? " When you pick a pack or a topic, its name is counted as a GoatCounter event; nothing you type is sent." : ""}</p>` : ""}
 <h2 id="run-your-own">Run your own</h2>
 <p>gitforage is free and MIT licensed. Make your own portal in about five minutes: create a repo from the gitforage template, describe your interests in <code>interests.yml</code>, and turn on GitHub Pages. A weekly GitHub Action does the rest; there is no server and no paid key.</p>
 <p><a class="btn" href="${href(RUN_YOUR_OWN_URL)}">Run your own gitforage</a></p>`;

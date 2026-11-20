@@ -3,11 +3,14 @@
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve, sep } from "node:path";
-import { isSafeFullName, type Config, type Digest } from "@gitforage/core";
+import { isSafeFullName, type CatalogState, type Config, type Digest } from "@gitforage/core";
+import { catalogFile } from "./personalize.ts";
 import { atomFeed } from "./feed.ts";
 import { aboutPage, archivePage, digestPage, modePage, pagesUrl, topicPage, topicsIndexPage, type SiteContext } from "./render.ts";
 
 const ASSETS = ["site.css", "site.js", "theme.js", "icon.svg"];
+/** Shipped only when site.personalize is on. */
+export const PERSONALIZE_ASSETS = ["personalize.js", "personalize-core.js"];
 const assetDir = join(import.meta.dir, "..", "assets");
 
 export interface BuildOptions {
@@ -15,6 +18,8 @@ export interface BuildOptions {
   repo?: string | null;
   /** Build time (ISO). Defaults to now. */
   now?: string;
+  /** state/catalog.json, for site.personalize. Validated again here. */
+  catalog?: CatalogState | null;
 }
 
 export function siteContext(cfg: Config, o: BuildOptions = {}): SiteContext {
@@ -41,6 +46,10 @@ export function renderSite(cfg: Config, digests: Digest[], o: BuildOptions = {})
   for (const t of cfg.topics) files.set(`topics/${t}.html`, topicPage(ctx, digests, t));
   files.set("feed.xml", atomFeed(digests, { title: cfg.site.title, baseUrl: ctx.baseUrl, updated: ctx.updated }));
   for (const a of ASSETS) files.set(`assets/${a}`, readFileSync(join(assetDir, a), "utf8"));
+  if (cfg.site.personalize.enabled) {
+    files.set("catalog.json", JSON.stringify(catalogFile(cfg, o.catalog ?? null, ctx.portal)));
+    for (const a of PERSONALIZE_ASSETS) files.set(`assets/${a}`, readFileSync(join(assetDir, a), "utf8"));
+  }
   return files;
 }
 
