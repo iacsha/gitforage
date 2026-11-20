@@ -11,12 +11,13 @@ Every candidate gets a fit score, and every score lists its reasons, so you can 
 
 ## Status
 
-Milestones 1 to 3 are done:
+Milestones 1 to 3.6 are done:
 
 - The core library and a command-line tool: kin learned from your own stars, rising older repos, popularity scaled within each topic, regex and keyword exclusions, and `feedback.yml` Keep/Skip marks feeding the score. Rules only, no LLM.
 - A static portal (Discover and Get involved tabs, topics, an archive, an About page) with an Atom feed, built by `gitforage site`.
 - Keep and Skip buttons on every card, folded into `feedback.yml` by `gitforage feedback`.
 - A spoken-language filter, a star-farm guard, and Theme and Language buttons on the portal.
+- Optional browser-side personalization: a "Pick your topics" panel over a bigger topic catalog, starter packs, "Use my GitHub stars", local Keep and Skip, and shareable `?t=` links. The demo turns it on.
 - A template repo (in [`template/`](template)) with two GitHub Actions workflows: a weekly forage that deploys the portal to GitHub Pages, and a feedback workflow.
 
 It runs with [bun](https://bun.sh), on your machine or in GitHub Actions.
@@ -59,7 +60,7 @@ The template does not install gitforage from a package registry or a moving tag.
 
 Each card shows the repo (linked to GitHub), its description, a source badge (**New**, **Rising**, **Live fork** or **Like your stars**), the top scoring reasons as chips, stars, language and last push, and Keep and Skip buttons. Keys: `j` and `k` move between cards, `Enter` opens one.
 
-The site is plain HTML and CSS with two small same-origin scripts. It uses system fonts, works on a phone, and loads nothing from other hosts unless you turn on analytics.
+The site is plain HTML and CSS with two small same-origin scripts (and, with [personalization](#pick-your-topics) on, a third on the Discover page). It uses system fonts, works on a phone, and loads nothing from other hosts unless you turn on analytics. With personalization on, a visitor's browser calls `api.github.com` only when they press "Use my GitHub stars".
 
 Two buttons sit in the header, next to the Density control (see [Layout](#layout)):
 
@@ -87,7 +88,48 @@ site:
 
 Density, fields and sort are saved in the browser like the theme, and `theme.js` applies density and fields before the page paints. Filters last for the page. Without JavaScript the controls stay hidden and the page uses the config's density, fields and order, because the server writes them into the HTML.
 
-**Analytics** are off by default. For cookieless visit counts with [GoatCounter](https://www.goatcounter.com), create a GoatCounter site and add `analytics: { provider: goatcounter, code: <your code> }` under `site:`. The script is loaded with a subresource integrity hash, and only GoatCounter's own origins are added to the Content-Security-Policy.
+**Analytics** are off by default. For cookieless visit counts with [GoatCounter](https://www.goatcounter.com), create a GoatCounter site and add `analytics: { provider: goatcounter, code: <your code> }` under `site:`. The script is loaded with a subresource integrity hash, and only GoatCounter's own origins are added to the Content-Security-Policy. With [personalization](#pick-your-topics) on, picking a starter pack or a topic is also counted as a GoatCounter event (`pick-pack-<id>`, `pick-topic-<topic>`, `pick-stars-used`): fixed names over the catalog's own slugs, never a username or anything typed.
+
+### Pick your topics
+
+A portal can let each visitor re-rank it for their own interests, in their browser, with no server and no account. Turn it on with `site.personalize`:
+
+```yaml
+site:
+  personalize:
+    enabled: true
+    catalog:
+      per_topic: 25            # best candidates kept per topic (1 to 100)
+      groups:                  # the picker's groups, in order
+        - name: Healthcare interoperability
+          topics: [hl7, fhir, dicom, ehr]
+        - name: Rust, Go and TypeScript
+          topics: [rust, golang, typescript]
+      topics: [gamedev]        # more topics, shown under "More topics"
+    packs:                     # starter packs: one click picks their topics
+      - { id: healthcare-dev, name: Healthcare dev, topics: [hl7, fhir, dicom] }
+```
+
+The catalog is the groups' topics, `catalog.topics` and your own `topics` (at most 150). The default view does not change: the Discover page still shows the digest for your own topics, rendered by the server, and that is all a visitor without JavaScript sees.
+
+**What the forage does.** In discover mode, `run` also searches every catalog topic that is not one of your topics: one search for new repos and one for rising repos each, as for your own topics. Candidates found only by those searches are kept out of your digest. Every candidate is then scored again with the catalog topics, and its score without the `topic_match` term (the base score), its other reasons, star velocity, sources and detected spoken language go into `state/catalog.json`. The site writes them to `catalog.json`. Only the best `per_topic` candidates of each topic are kept (by base score), at most 2,500 in all, and the file has a 1.6 MB budget: when the catalog would be bigger, the per-topic cap is lowered until it fits. That keeps `catalog.json` well under 400 KB gzipped. Exclusions, the language filter and the star-farm guard apply to the catalog as to the digest. Activity signals (releases, README, contributing) are only fetched for the digest's top `signals_top`, so most catalog cards score without them.
+
+**What the visitor sees.** A **Pick your topics** button above the Discover list opens a dialog with:
+
+- **Starter packs**, which tick their topics.
+- **Use my GitHub stars**: a username field. The visitor's browser reads up to three pages of `https://api.github.com/users/<name>/starred` itself, without a token. gitforage weighs each catalog topic by how much more common it is on those stars than in the catalog (lift) and ticks the strongest few. Only the topics and their weights are kept, with the date, in the browser; the username and the starred repos are not stored anywhere. A missing user, GitHub's rate limit (60 unauthenticated lookups an hour per network, shown as "try again later") and network errors each get a plain message.
+- **Topics**: a searchable checklist, grouped as configured, with a live "N repos for M topics" count.
+- **Clear my local marks.**
+
+**Show** re-ranks the catalog in the browser: each repo's base score plus `topic_match` for every picked topic it carries (up to three, as on the server, with the same "2 of your topics (hl7, fhir)" reason), plus any local marks. Repos with none of the picked topics are hidden. The bar then says "N repos for your topics", with **Copy link** and **Reset to the default view**. The dialog is a modal `<dialog>`: focus stays inside it, Esc closes it, and focus goes back to the button.
+
+**Local Keep and Skip.** Every card on the Discover page also gets **More like this** and **Hide** buttons that work in this browser only, for visitors without a GitHub account. Hide removes the repo here; both nudge repos with the same topics, owner and language, the way `feedback.yml` does on the server (`tanh(net / 2)` per key). The GitHub-issue Keep and Skip buttons stay as they are.
+
+**Links.** `?t=hl7,fhir` and `?pack=healthcare-dev` open that view. Both are checked against the catalog's topics and pack ids, and anything else (or a value over 600 characters) is ignored. The address updates as the view changes (`history.replaceState`), so it can be bookmarked or shared.
+
+**Saved in the browser:** `gitforage-picks` (the topics and pack), `gitforage-marks` (repo, mark, and the repo's topics and language, at most 500) and `gitforage-stars` (topic weights and a date, kept 30 days). Each is schema-checked when read and dropped when it does not fit.
+
+**API budget.** The extra cost is two searches per extra catalog topic, all on the search limit (30 a minute, including for the Actions `GITHUB_TOKEN`), plus nothing on the core limit. The demo's 96 topics (80 beyond its own) add 160 searches. Measured on 2026-11-20 with a cold cache and the Actions-sized `GITHUB_TOKEN` limits: a full discover run took 364 API requests and about 8 minutes (123 s of that waiting for the search limit), and the contribute run after it 101 requests (166 answered from cache) and under a minute, so about 465 requests and 9 minutes for a week. That is far inside a scheduled run's limits, so the whole catalog is foraged every week and no topic rotation is needed. It scored 1,908 catalog candidates, kept 1,363 (25 per topic), and `catalog.json` came to 0.91 MB raw and 0.19 MB gzipped. Each extra topic adds two searches, about 4 seconds at the search limit.
 
 ## Keep and Skip
 
@@ -131,7 +173,7 @@ gitforage feedback [--config interests.yml] [--event FILE] [--issues FILE] [--re
 ```
 
 - `preview` prints a ranked list: score, repo, stars, source, top reasons and link. It ignores the seen state and does not write it. With `--out` it writes markdown instead.
-- `run` leaves out anything already in `state/seen.json`, prints a markdown digest (or writes it with `--out`), records what it reported in `state/seen.json`, records star counts in `state/stars.json` for rising repos, and keeps the list in `state/digests/<date>-<mode>.json` for the portal.
+- `run` leaves out anything already in `state/seen.json`, prints a markdown digest (or writes it with `--out`), records what it reported in `state/seen.json`, records star counts in `state/stars.json` for rising repos, writes `state/catalog.json` in discover mode when `site.personalize` is on, and keeps the list in `state/digests/<date>-<mode>.json` for the portal.
 - `site` builds the portal from `state/digests/` into `--out`. `--repo` names the portal repo for the Keep and Skip links (the workflow passes its own repo).
 - `feedback` reads issues as JSON: a GitHub `issues` event (`--event`), a list as the REST API returns it (`--issues`), or the `GITFORAGE_ISSUES_JSON` variable. It appends accepted marks to `feedback.yml` and, with `--replies DIR`, writes a reply per handled issue to `DIR/<number>.md`. Issues that do not look like feedback are left alone.
 - Both read `feedback.yml` next to the config (or `--feedback FILE`) when it exists.
@@ -181,6 +223,11 @@ See [`interests.example.yml`](interests.example.yml). You need at least one of `
 | `site.layout.density` | `comfortable` | The default card layout: `comfortable`, `compact` (smaller text, more tiles) or `list` (one row per repo). See [Layout](#layout). |
 | `site.layout.sort` | `score` | The default order: `score`, `newest`, `stars` or `rising`. |
 | `site.layout.fields` | all `true` | Which card fields show by default: `{ reasons, health, language, stars }`, each `true` or `false`. |
+| `site.personalize.enabled` | `false` | The Discover page's "Pick your topics" panel. See [Pick your topics](#pick-your-topics). |
+| `site.personalize.catalog.groups` | `[]` | The picker's groups: `{ name, topics }`, at most 24. Names are plain text up to 60 characters. |
+| `site.personalize.catalog.topics` | `[]` | More catalog topics, shown under "More topics" with your own `topics`. At most 150 catalog topics in all. |
+| `site.personalize.catalog.per_topic` | `25` | Candidates kept per topic in `catalog.json` (1 to 100), lowered automatically to fit the size budget. |
+| `site.personalize.packs` | `[]` | Starter packs: `{ id, name, topics }`, at most 24, topics from the catalog. |
 | `feedback.visitors` | `true` | Accept Keep and Skip from people who are not owners or collaborators. |
 | `feedback.visitor_weight` | `0.25` | How much a visitor mark counts next to an owner mark (0 to 1). |
 | `feedback.max_per_user` | `3` | Most marks one person can add a day. Owners are not limited. |
@@ -319,7 +366,7 @@ Ties are broken by stars, then by name, so output is deterministic for the same 
 
 ## State and feedback
 
-`gitforage run` keeps `state/seen.json` next to the config (or at `--state`). It maps each reported `owner/repo` to the date it was first shown and its score then. Beside it, `state/stars.json` holds the star counts used for growth, and `state/digests/` holds each run's list. Keys are sorted so the files diff cleanly in git. `preview` never writes them; it reads `stars.json` so growth shows up. A second `run` on the same day and mode adds to that day's digest instead of replacing it. Running discover and then contribute with the same state, as the template does, lists each repo once, in the first mode that ranks it.
+`gitforage run` keeps `state/seen.json` next to the config (or at `--state`). It maps each reported `owner/repo` to the date it was first shown and its score then. Beside it, `state/stars.json` holds the star counts used for growth, `state/catalog.json` the personalization catalog (when on), and `state/digests/` holds each run's list. Keys are sorted so the files diff cleanly in git. `preview` never writes them; it reads `stars.json` so growth shows up. A second `run` on the same day and mode adds to that day's digest instead of replacing it. Running discover and then contribute with the same state, as the template does, lists each repo once, in the first mode that ranks it.
 
 `feedback.yml` holds your Keep and Skip marks:
 
@@ -336,7 +383,7 @@ Marks that come in through the portal also carry `from: visitor` or `from: owner
 
 gitforage handles two kinds of untrusted input: text from strangers' repos, and Keep/Skip issues from anyone on GitHub.
 
-**On the portal**, every page carries a strict Content-Security-Policy (`default-src 'none'; style-src 'self'; script-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'`, plus GoatCounter's origins only if you turn analytics on). There is no inline script, no inline style and no style attribute. The theme script that runs before paint is a separate same-origin file, not an inline snippet, so the policy needs no `unsafe-inline`. The scripts only read and write five fixed `localStorage` keys (theme, language, density, fields and sort) inside `try`, accept only known values from them, and never write markup. Every `data-*` attribute on a card comes from a fixed list (`data-lang` from the language codes, `data-sources` from the four sources), a strict topic pattern, or a number formatted by the build (score, stars, created date, momentum, rank), and a test fails on any `data-*` name outside the allow-list. Every dynamic string goes through one HTML escaper, applied automatically by the page templates, and every link is checked to be a GitHub link rebuilt from a validated name or a relative link inside the site. Digest files are validated again when the site is built, as if a stranger had written them. The tests render descriptions full of `<img onerror>`, `javascript:`, quote-breaking attributes and bidi characters and check that the output is inert. The Atom feed has its own XML escaper.
+**On the portal**, every page carries a strict Content-Security-Policy (`default-src 'none'; style-src 'self'; script-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'`, plus GoatCounter's origins only if you turn analytics on). With personalization on, the Discover page alone adds `connect-src 'self' https://api.github.com`: `'self'` to read `catalog.json`, and GitHub's API for a visitor's own stars lookup. The personalize scripts build every node with `createElement` and `textContent`, set attributes only from an allow-list, link only to GitHub URLs rebuilt from validated names, and validate `catalog.json`, the URL, `localStorage` and GitHub's responses (shape, size and item count) before using them; a test scans every portal script for `innerHTML`, `outerHTML`, `insertAdjacentHTML`, `document.write`, `eval(` and `Function(`. There is no inline script, no inline style and no style attribute. The theme script that runs before paint is a separate same-origin file, not an inline snippet, so the policy needs no `unsafe-inline`. The scripts only read and write five fixed `localStorage` keys (theme, language, density, fields and sort) inside `try`, accept only known values from them, and never write markup. Every `data-*` attribute on a card comes from a fixed list (`data-lang` from the language codes, `data-sources` from the four sources), a strict topic pattern, or a number formatted by the build (score, stars, created date, momentum, rank), and a test fails on any `data-*` name outside the allow-list. Every dynamic string goes through one HTML escaper, applied automatically by the page templates, and every link is checked to be a GitHub link rebuilt from a validated name or a relative link inside the site. Digest files are validated again when the site is built, as if a stranger had written them. The tests render descriptions full of `<img onerror>`, `javascript:`, quote-breaking attributes and bidi characters and check that the output is inert. The Atom feed has its own XML escaper.
 
 **In the workflows**, every action is pinned by a full commit SHA, and gitforage itself by a full commit SHA. Each job gets only the permissions it needs: the forage job can write repo contents, the deploy job can publish Pages, the feedback job can write contents and issues. There is no `pull_request_target`, checkouts do not keep credentials, and no `${{ }}` expression is placed inside a `run:` script: issue data reaches gitforage only as JSON files, and only fixed values go through `env:`. Tests check these rules on every workflow.
 

@@ -27,7 +27,8 @@ packages/core     interests.yml schema, GitHub client (cache, rate limits),
                   sanitising of untrusted text
                   run digests, feedback intake from Keep/Skip issues
 packages/cli      gitforage preview | run | site | feedback
-packages/site     static portal (density, sort and filters) and Atom feed
+packages/site     static portal (density, sort and filters, the topic picker
+                  and catalog.json) and Atom feed
 packages/notify   ntfy, Telegram, webhooks, email (coming)
 template/         what a portal repo starts from: interests.yml, feedback.yml,
                   the forage and feedback workflows
@@ -42,7 +43,7 @@ TypeScript, run with bun. Dependencies are kept minimal and pinned exactly.
 2. Edit `interests.yml`.
 3. Turn on Pages with GitHub Actions as the source.
 
-A scheduled workflow (weekly) forages in both modes, commits `state/` (seen repos, star counts and each run's digest), builds the portal and deploys it to Pages. The portal has Discover and Get involved tabs, topic pages, an archive, an About page and an Atom feed. Keep/Skip buttons on each card open a prefilled issue that a second workflow folds into `feedback.yml`, so feedback lives in git and no server is needed.
+A scheduled workflow (weekly) forages in both modes, commits `state/` (seen repos, star counts and each run's digest), builds the portal and deploys it to Pages. The portal has Discover and Get involved tabs, topic pages, an archive, an About page and an Atom feed. Keep/Skip buttons on each card open a prefilled issue that a second workflow folds into `feedback.yml`, so feedback lives in git and no server is needed. With `site.personalize`, discover runs also forage a bigger topic catalog into `state/catalog.json`, and the Discover page lets each visitor re-rank it for their own topics in their browser.
 
 Both workflows run gitforage from a pinned commit SHA, installed from its lockfile.
 
@@ -75,6 +76,7 @@ All text from GitHub is untrusted. Names are validated, text is escaped, and the
 2. Better candidates (done): kin from your own stars, rising older repos, popularity scaled within each topic, regex and keyword exclusions, and `feedback.yml` in the score.
 3. Template repo, portal, Atom feed, feedback (done).
    - 3.5 Customizable layout (done): Comfortable, Compact and List densities, card field switches, sort (score, newest, stars, rising) and source and topic filter chips, with defaults from `site.layout`.
+   - 3.6 Personalize in the browser (done): a topic catalog with groups and starter packs, re-ranked in the visitor's browser; "Use my GitHub stars" (the visitor's browser asks GitHub directly); local Keep and Skip; shareable `?t=` links; GoatCounter pick events when analytics are on. The default view and the JavaScript-off page are unchanged.
 4. Optional LLM re-rank and notifiers.
 5. Public v0.1 with a demo portal.
 6. Later: GitLab and Codeberg sources, and a hosted version.
