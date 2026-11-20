@@ -7,6 +7,8 @@ gitforage finds GitHub projects you'd care about and tells you on a schedule. Yo
 3. **Live forks** of projects you follow: forks that are ahead of upstream and recently pushed. These are often revived versions of dead projects.
 4. **Kin of your stars:** repos that share the topics and words that are unusually common among your own stars (lift over GitHub as a whole, TF-IDF style).
 
+With `revival.enabled`, a fifth list sits beside them: the **Revival radar** (the Revivals tab). It searches your topics for upstreams that are archived or have not been pushed for `revival.dormancy_months`, and for each looks for a fork that carries it on: ahead of upstream (`compare` ahead_by, so mirrors are rejected), pushed in the last 180 days, with stars or issues of its own, and past the exclusions and the star-farm guard. Renames and transfers (a fork that is the upstream itself, or older than it) are ignored, and an upstream whose homepage or description names the fork is labelled "upstream points here". It reuses the wild-fork pieces (the forks listing, `isLiveFork`, the compare call). A run makes at most `2 x topics (max 12) + 5 x revival.max_candidates` calls, and `state/revival.json` keeps each check for 28 days, so weekly runs re-examine an upstream about once a month.
+
 Each candidate gets a fit score with human-readable reasons, and digests only carry things you haven't seen before.
 
 It is not a trending list. Trending sites rank by popularity. gitforage ranks by fit to you and remembers what it has already shown you.
@@ -26,6 +28,7 @@ packages/core     interests.yml schema, GitHub client (cache, rate limits),
                   patterns, feedback.yml, seen and star-count state,
                   sanitising of untrusted text
                   run digests, feedback intake from Keep/Skip issues
+                  the revival radar (dormant upstream, live fork)
 packages/cli      gitforage preview | run | site | feedback
 packages/site     static portal (density, sort and filters, the topic picker
                   and catalog.json) and Atom feed

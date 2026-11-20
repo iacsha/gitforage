@@ -22,3 +22,4 @@ export * from "./starfarm.ts";
 export * from "./digest.ts";
 export * from "./intake.ts";
 export * from "./catalog.ts";
+export * from "./revival.ts";

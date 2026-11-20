@@ -30,11 +30,14 @@ const k = (n: number) => (n >= 10_000 ? `${Math.round(n / 1000)}k` : n >= 1000 ?
 const plural = (n: number, one: string, many = `${one}s`) => `${k(n)} ${n === 1 ? one : many}`;
 const months = (days: number) => (days < 60 ? `${days} days` : `${Math.round(days / 30)} months`);
 
-/** Run every check. Returns null when nothing looks off. */
-export function starFarmCheck(c: Candidate, now: number): StarFarmCheck | null {
+/**
+ * Run every check. Returns null when nothing looks off. Fork-only candidates are
+ * skipped unless `forks` is set: the revival radar checks a fork standing on its own.
+ */
+export function starFarmCheck(c: Candidate, now: number, o: { forks?: boolean } = {}): StarFarmCheck | null {
   const r = c.repo;
   const stars = r.stars;
-  if (stars < 500 || c.sources.every((s) => s === "fork")) return null;
+  if (stars < 500 || (!o.forks && c.sources.every((s) => s === "fork"))) return null;
   const out: StarFarmCheck = { evidence: [], strong: 0, weak: 0 };
   const add = (strong: boolean, text: string) => {
     out.evidence.push(text);

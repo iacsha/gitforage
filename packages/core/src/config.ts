@@ -69,7 +69,21 @@ export interface Config {
   popularity: "topic" | "global";
   site: SiteConfig;
   feedback: FeedbackConfig;
+  /** Revival radar: dormant upstreams in your topics carried on by a live fork (revival.ts). */
+  revival: RevivalConfig;
 }
+
+export interface RevivalConfig {
+  enabled: boolean;
+  /** An upstream with no push for this many months counts as dormant. */
+  dormancy_months: number;
+  /** Most upstreams examined afresh per run (each costs at most 5 API calls). */
+  max_candidates: number;
+  /** A fork needs this many stars (or a few open issues of its own) to count as carrying the project. */
+  min_fork_stars: number;
+}
+
+export const DEFAULT_REVIVAL: RevivalConfig = { enabled: false, dormancy_months: 12, max_candidates: 10, min_fork_stars: 5 };
 
 export interface Filters {
   min_stars: number;
@@ -197,7 +211,7 @@ export class ConfigError extends Error {
 
 const TOP_KEYS = [
   "profile", "topics", "keywords", "seeds", "stars_from", "exclude", "filters",
-  "cadence", "digest_size", "llm", "mode", "weights", "limits", "cache", "popularity", "site", "feedback",
+  "cadence", "digest_size", "llm", "mode", "weights", "limits", "cache", "popularity", "site", "feedback", "revival",
 ];
 const CADENCES: Cadence[] = ["daily", "weekly", "monthly"];
 const PROVIDERS: LlmProvider[] = ["none", "anthropic", "openai-compatible", "ollama"];
@@ -554,10 +568,20 @@ export function validateConfig(raw: unknown, source = "interests.yml"): Config {
   feedback.max_per_user = c.int(fbk.max_per_user, "feedback.max_per_user", DEFAULT_FEEDBACK.max_per_user, 1, 100);
   feedback.min_account_age_days = c.int(fbk.min_account_age_days, "feedback.min_account_age_days", DEFAULT_FEEDBACK.min_account_age_days, 0, 3650);
 
+  const rv = c.section(raw.revival, "revival");
+  c.unknownKeys(rv, Object.keys(DEFAULT_REVIVAL), "revival");
+  const revival: RevivalConfig = {
+    enabled: c.bool(rv.enabled, "revival.enabled", DEFAULT_REVIVAL.enabled),
+    dormancy_months: c.int(rv.dormancy_months, "revival.dormancy_months", DEFAULT_REVIVAL.dormancy_months, 3, 120),
+    max_candidates: c.int(rv.max_candidates, "revival.max_candidates", DEFAULT_REVIVAL.max_candidates, 1, 50),
+    min_fork_stars: c.int(rv.min_fork_stars, "revival.min_fork_stars", DEFAULT_REVIVAL.min_fork_stars, 0, 100_000),
+  };
+  if (revival.enabled && topics.length === 0) c.err("revival.enabled", "the revival radar searches your topics, so it needs topics");
+
   if (c.problems.length) throw new ConfigError(source, c.problems);
   return {
     profile, topics, keywords, seeds, stars_from, exclude, filters, cadence, digest_size,
-    llm: { provider, model }, mode, weights: weightsFor(mode, weight_overrides), weight_overrides, limits, cache: { ttl_hours: ttl }, popularity, site, feedback,
+    llm: { provider, model }, mode, weights: weightsFor(mode, weight_overrides), weight_overrides, limits, cache: { ttl_hours: ttl }, popularity, site, feedback, revival,
   };
 }
 

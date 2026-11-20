@@ -4,13 +4,13 @@
 
 import {
   catalogTopics, CARD_FIELDS, DENSITIES, isLanguageCode, isSafeFullName, LANGUAGES, normaliseBaseUrl, repoUrl, SORTS, withMode,
-  type CardField, type Config, type Density, type Digest, type DigestItem, type Mode, type SiteConfig, type SortKey, type Weights,
+  type CardField, type Config, type Density, type Digest, type DigestItem, type Mode, type RevivalItem, type SiteConfig, type SortKey, type Weights,
 } from "@gitforage/core";
 import { href, html, trusted, type Html } from "./html.ts";
 import { localMarks, personalBar, personalList, pickDialog } from "./personalize.ts";
-import { SOURCE_LABELS, STRINGS } from "../assets/strings.js";
+import { REVIVAL_NOTE, SOURCE_LABELS, STRINGS } from "../assets/strings.js";
 import { ringShapes, ringSpec, ringWords } from "../assets/rings.js";
-import { fieldNote } from "../assets/fieldnote.js";
+import { fieldNote, noteHash } from "../assets/fieldnote.js";
 
 /** The project's own repo, for "Run your own gitforage" and the About page. */
 export const PROJECT_URL = "https://github.com/iacsha/gitforage";
@@ -141,7 +141,7 @@ ${abs ? html`<meta property="og:url" content="${abs(o.path)}">
 ` : ""}<meta name="twitter:card" content="${abs ? "summary_large_image" : "summary"}">`;
 }
 
-type Nav = "discover" | "contribute" | "topics" | "archive" | "about" | null;
+type Nav = "discover" | "contribute" | "revival" | "topics" | "archive" | "about" | null;
 
 export function page(ctx: SiteContext, o: { title: string; description: string; root: string; path: string; nav: Nav; body: Html; personalize?: boolean }): string {
   const site = ctx.cfg.site;
@@ -176,6 +176,7 @@ ${o.personalize ? html`<script type="module" src="${href(`${o.root}assets/person
 <ul class="nav">
 ${link("discover", "index.html", STRINGS.discoverNav)}
 ${link("contribute", "involved.html", STRINGS.contributeNav)}
+${ctx.cfg.revival.enabled ? link("revival", "revival.html", STRINGS.revivalNav) : ""}
 ${link("topics", "topics/index.html", STRINGS.topicsNav)}
 ${link("archive", "archive/index.html", STRINGS.archiveNav)}
 ${link("about", "about.html", STRINGS.aboutNav)}
@@ -665,3 +666,85 @@ ${cfg.site.personalize.enabled ? html`<p>"${STRINGS.pickPatch}" on the Discover 
 }
 
 export const MODE_PAGES = MODE_PAGE;
+
+// ---- Revival radar ---------------------------------------------------------------------
+//
+// Items come from state/revival.json, validated again by the caller (toRevivalItem):
+// plain owner/repo names, counts, ISO dates, booleans and a topic slug. Links are
+// rebuilt from the names; the one free-text field, the fork's release tag, is shown
+// through the escaper only. The field note never reads either repo's text.
+
+const fillNote = (t: string, vars: Record<string, string>) => t.replace(/\{([A-Za-z]+)\}/g, (_m, k: string) => (Object.hasOwn(vars, k) ? vars[k] : ""));
+const capFirst = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
+
+/** The revival card's field note, in the guide's voice, from validated fields only. */
+export function revivalNote(it: RevivalItem, now: string, allowed: string[]): string {
+  const h = noteHash(it.fork.full_name);
+  const topic = TOPIC_RE.test(it.upstream.topic) && allowed.includes(it.upstream.topic) ? it.upstream.topic : "";
+  const where = topic ? `in the ${topic} patch` : "off the usual trails";
+  const nowMs = Date.parse(now);
+  const days = (iso: string) => {
+    const t = Date.parse(iso);
+    return Number.isFinite(t) && Number.isFinite(nowMs) ? Math.max(0, Math.floor((nowMs - t) / 86_400_000)) : null;
+  };
+  const quiet = days(it.upstream.pushed_at);
+  const years = quiet === null ? 0 : Math.floor(quiet / 365);
+  const state = it.upstream.archived ? REVIVAL_NOTE.archived : years >= 2 ? fillNote(REVIVAL_NOTE.dormantYears, { n: numAttr(Math.min(years, 50)) }) : REVIVAL_NOTE.dormant;
+  const pushed = days(it.fork.pushed_at);
+  const when = REVIVAL_NOTE.when[pushed === null ? 3 : pushed <= 7 ? 0 : pushed <= 31 ? 1 : pushed <= 92 ? 2 : 3];
+  const ahead = Math.max(1, Number(numAttr(it.fork.ahead_by)));
+  const parts = [
+    fillNote(REVIVAL_NOTE.openers[h % REVIVAL_NOTE.openers.length], { where, Where: capFirst(where), state }),
+    fillNote(REVIVAL_NOTE.ahead, { n: fmtNum(ahead), commits: ahead === 1 ? REVIVAL_NOTE.commit : REVIVAL_NOTE.commits, when }),
+  ];
+  const rel = it.fork.release ? days(it.fork.release.published_at) : null;
+  if (rel !== null && rel <= 90) parts.push(REVIVAL_NOTE.release);
+  if (it.points_here) parts.push(REVIVAL_NOTE.pointsHere);
+  return parts.join(" ");
+}
+
+function nameLink(full: string): Html {
+  const url = repoUrl(full);
+  if (!url) return trusted("");
+  const [owner, name] = full.split("/");
+  return html`<a href="${href(url)}"><span class="owner">${owner}/</span>${name}</a>`;
+}
+
+export function revivalCard(ctx: SiteContext, it: RevivalItem, rank: number): Html {
+  const up = it.upstream, f = it.fork;
+  if (!isSafeFullName(up.full_name) || !isSafeFullName(f.full_name)) return trusted("");
+  const id = `rv-${f.full_name.replace("/", "-")}`;
+  const quiet = fmtDate(up.pushed_at);
+  const upState = up.archived ? `archived${quiet ? `, last push ${quiet}` : ""}` : quiet ? `dormant since ${quiet}` : "dormant";
+  const pushed = fmtDate(f.pushed_at);
+  const checked = fmtDate(it.checked_at);
+  const topic = TOPIC_RE.test(up.topic) && ctx.cfg.topics.includes(up.topic) ? up.topic : "";
+  const forkFacts = [
+    html`<li>${plural(f.ahead_by, "commit")} ahead</li>`,
+    pushed ? html`<li>${STRINGS.pushed} <time datetime="${f.pushed_at}">${pushed}</time></li>` : "",
+    html`<li>${plural(f.stars, "star")}</li>`,
+    f.release ? html`<li>release <code>${f.release.tag}</code></li>` : "",
+  ];
+  return html`<li>
+<article class="card revival-card" id="${id}" data-card aria-labelledby="${`${id}-t`}">
+<p class="spec-line"><span class="spec-no"><span class="sr-only">${STRINGS.specimen} </span>${STRINGS.specimenShort} ${pad3(rank + 1)}</span>${topic ? html`<span class="spec-habitat">${STRINGS.topicFilter}: <a href="${href(`topics/${topic}.html`)}">${topic}</a></span>` : ""}${checked ? html`<span class="spec-found">${STRINGS.found} <time datetime="${it.checked_at}">${checked}</time></span>` : ""}</p>
+<div class="card-head">
+<h2 class="card-title" id="${`${id}-t`}">${nameLink(f.full_name)}</h2>
+${it.points_here ? html`<p class="badges"><span class="badge badge-fork" title="${STRINGS.revivalPointsHereTitle}">${STRINGS.revivalPointsHere}</span></p>` : ""}
+</div>
+<p class="note">${revivalNote(it, ctx.updated, noteTopics(ctx.cfg))}</p>
+<p class="revival-line"><span class="revival-label">${STRINGS.revivalParent}</span> ${nameLink(up.full_name)} <span class="muted">${upState} · ${plural(up.stars, "star")}</span></p>
+<p class="revival-line"><span class="revival-label">${STRINGS.revivalCarried}</span> ${nameLink(f.full_name)}</p>
+<ul class="meta">${forkFacts}</ul>
+</article>
+</li>`;
+}
+
+export function revivalPage(ctx: SiteContext, items: RevivalItem[]): string {
+  const body = html`<h1>${STRINGS.revivalTitle}</h1>
+<p class="lede">${STRINGS.revivalLede}</p>
+${items.length ? html`<ol class="cards revival-cards">
+${items.map((it, i) => revivalCard(ctx, it, i))}
+</ol>` : emptyState(STRINGS.revivalEmpty)}`;
+  return page(ctx, { title: STRINGS.revivalTitle, description: STRINGS.revivalLede, root: "", path: "revival.html", nav: "revival", body });
+}

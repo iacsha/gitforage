@@ -3,12 +3,12 @@
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve, sep } from "node:path";
-import { isSafeFullName, type CatalogState, type Config, type Digest } from "@gitforage/core";
+import { isSafeFullName, toRevivalItem, type CatalogState, type Config, type Digest, type RevivalItem } from "@gitforage/core";
 import { catalogFile } from "./personalize.ts";
 import { atomFeed } from "./feed.ts";
 import { backtestPage } from "./backtest.ts";
 import { haulFiles } from "./haul.ts";
-import { aboutPage, archivePage, digestPage, modePage, pagesUrl, topicPage, topicsIndexPage, type SiteContext } from "./render.ts";
+import { aboutPage, archivePage, digestPage, modePage, pagesUrl, revivalPage, topicPage, topicsIndexPage, type SiteContext } from "./render.ts";
 
 const ASSETS = ["site.css", "site.js", "theme.js", "icon.svg", "paper.svg", "paper-night.svg"];
 /** The heading font's license travels with it (SIL OFL 1.1), published at a lowercase path. */
@@ -28,6 +28,8 @@ export interface BuildOptions {
   catalog?: CatalogState | null;
   /** One-line notes for Haul issues, by issue number (from haul.txt). */
   haulNotes?: Map<number, string> | null;
+  /** The revival radar (state/revival.json items), for revival.html. Validated again here. */
+  revival?: RevivalItem[] | null;
 }
 
 export function siteContext(cfg: Config, o: BuildOptions = {}): SiteContext {
@@ -47,6 +49,10 @@ export function renderSite(cfg: Config, digests: Digest[], o: BuildOptions = {})
   const latest = (mode: Digest["mode"]) => digests.find((d) => d.mode === mode) ?? null;
   files.set("index.html", modePage(ctx, "discover", latest("discover")));
   files.set("involved.html", modePage(ctx, "contribute", latest("contribute")));
+  if (cfg.revival.enabled) {
+    const items = (o.revival ?? []).slice(0, 100).map(toRevivalItem).filter((x): x is RevivalItem => x !== null);
+    files.set("revival.html", revivalPage(ctx, items));
+  }
   files.set("about.html", aboutPage(ctx));
   files.set("backtest.html", backtestPage(ctx));
   files.set("archive/index.html", archivePage(ctx, digests));
