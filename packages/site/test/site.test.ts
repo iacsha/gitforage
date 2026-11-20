@@ -377,11 +377,17 @@ describe("theme and language controls", () => {
     };
     const ratio = (a: string, b: string) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
     const text = [["text", "bg"], ["text", "surface"], ["text", "chip-bg"], ["muted", "bg"], ["muted", "surface"], ["muted", "chip-bg"],
-      ["accent", "surface"], ["accent", "bg"], ["on-accent", "accent"], ["new-fg", "new-bg"], ["rising-fg", "rising-bg"], ["fork-fg", "fork-bg"], ["kin-fg", "kin-bg"]];
+      ["accent", "surface"], ["accent", "bg"], ["accent", "chip-bg"], ["on-accent", "accent"], ["on-accent", "accent-hover"], ["stamp", "surface"], ["stamp", "bg"],
+      ["new-fg", "new-bg"], ["rising-fg", "rising-bg"], ["fork-fg", "fork-bg"], ["kin-fg", "kin-bg"]];
+    // Graphics (tree rings, map contours, focus) need 3:1 against the card (WCAG 1.4.11).
+    const graphics = ["focus", "ring-line", "ring-fresh", "ring-recent", "ring-quiet", "ring-dormant"];
     for (const t of [light, dark]) {
       for (const [f, b] of text) expect([f, b, ratio(t[f], t[b]) >= 4.5]).toEqual([f, b, true]);
-      expect(ratio(t.focus, t.surface)).toBeGreaterThanOrEqual(3);
+      for (const g of graphics) expect([g, ratio(t[g], t.surface) >= 3]).toEqual([g, true]);
     }
+    // Every density uses these same tokens: after the token blocks the stylesheet has no raw colours.
+    const rules = css.slice(css.indexOf(':root[data-theme="light"]'));
+    expect(rules.match(/#[0-9a-f]{3,8}\b/gi)).toBeNull();
     expect(css).toContain(':root:not([data-theme]) .pref-btn .icon-system');
     expect(css).toContain(':root[data-lang-default="only"]:not([data-lang-filter]) [data-lang-match="no"]');
   });

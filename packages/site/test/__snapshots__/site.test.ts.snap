@@ -2,9 +2,9 @@
 
 exports[`layout: density, fields, sort and filters build output snapshot: comfortable 1`] = `
 "<main id="main" class="wrap" tabindex="-1">
-<h1>Discover</h1>
-<p class="lede">Useful tools that fit these interests, ranked by fit rather than popularity. Every card says why it is here.</p>
-<p class="run-line">From the run on <time datetime="2026-11-22T06:00:00.000Z">Nov 22, 2026</time>: 3 repos. <a href="archive/2026-11-22-discover.html">Permalink</a> · <a href="archive/index.html">Past digests</a></p>
+<h1>This week&#39;s haul</h1>
+<p class="lede">Useful tools that fit these interests, ranked by fit rather than popularity. Every card says why it made the basket.</p>
+<p class="run-line">Brought home <time datetime="2026-11-22T06:00:00.000Z">Nov 22, 2026</time>: 3 specimens. <a href="archive/2026-11-22-discover.html">Permalink</a> · <a href="archive/index.html">Past hauls</a></p>
 <div class="view-bar" data-view-bar hidden>
 <div class="view-row">
 <label class="view-sort"><span class="view-label">Sort</span> <select data-sort-select>
@@ -20,86 +20,89 @@ exports[`layout: density, fields, sort and filters build output snapshot: comfor
 <p class="view-count" data-filter-count aria-live="polite" aria-atomic="true"></p>
 </div>
 <div class="filter-row">
-<div class="filter-group" role="group" aria-label="Filter by source"><span class="view-label" aria-hidden="true">Source</span><button type="button" class="filter-chip" data-filter="source" data-value="search" aria-pressed="false">New</button><button type="button" class="filter-chip" data-filter="source" data-value="rising" aria-pressed="false">Rising</button><button type="button" class="filter-chip" data-filter="source" data-value="kin" aria-pressed="false">Like your stars</button></div>
-<div class="filter-group" role="group" aria-label="Filter by topic"><span class="view-label" aria-hidden="true">Topic</span><button type="button" class="filter-chip" data-filter="topic" data-value="hl7" aria-pressed="false">hl7</button><button type="button" class="filter-chip" data-filter="topic" data-value="fhir" aria-pressed="false">fhir</button></div>
+<div class="filter-group" role="group" aria-label="Filter by source"><span class="view-label" aria-hidden="true">Source</span><button type="button" class="filter-chip" data-filter="source" data-value="search" aria-pressed="false">Seedlings</button><button type="button" class="filter-chip" data-filter="source" data-value="rising" aria-pressed="false">Thriving</button><button type="button" class="filter-chip" data-filter="source" data-value="kin" aria-pressed="false">Kindred</button></div>
+<div class="filter-group" role="group" aria-label="Filter by topic"><span class="view-label" aria-hidden="true">Patch</span><button type="button" class="filter-chip" data-filter="topic" data-value="hl7" aria-pressed="false">hl7</button><button type="button" class="filter-chip" data-filter="topic" data-value="fhir" aria-pressed="false">fhir</button></div>
 <button type="button" class="filter-clear" data-filter-clear hidden>Clear filters</button>
 </div>
 </div>
 <ol class="cards" data-cards>
 <li data-lang="en" data-lang-match="yes" data-sources="kin" data-topics="fhir" data-score="20" data-newest="20605" data-stars="30" data-rising="2.5" data-rank="1">
 <article class="card" id="r-a-high" data-card aria-labelledby="r-a-high-t">
+<p class="spec-line"><span class="spec-no"><span class="sr-only">Specimen </span>No. 002</span><span class="spec-habitat meta-lang">Habitat: TypeScript</span><span class="spec-found">Found <time datetime="2026-11-22T06:00:00.000Z">Nov 22, 2026</time></span></p>
 <div class="card-head">
+<span class="ring" title="Tree ring: under a year old, growing this week, gaining stars"><svg class="ring-svg" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" focusable="false"><circle class="ring-pith" cx="12.00" cy="12.00" r="1.40"/><circle class="ring-growth ring-fresh" cx="12.00" cy="12.00" r="10.30" stroke-width="2.60"/></svg><span class="sr-only">Tree ring: under a year old, growing this week, gaining stars</span></span>
 <h2 class="card-title" id="r-a-high-t"><a href="https://github.com/a/high"><span class="owner">a/</span>high</a></h2>
 <p class="score" title="Fit score: the sum of the rule points"><span class="sr-only">Score </span>20</p>
-<p class="badges"><span class="badge badge-kin" title="Shares the topics and words that are unusual among the profile&#39;s stars">Like your stars</span></p>
+<p class="badges"><span class="badge badge-kin" title="Kindred: shares the topics and words that are unusual among the profile&#39;s stars">Kindred</span></p>
 </div>
-<p class="desc">A tool</p>
-<ul class="chips" aria-label="Why it is here"><li>~40 stars a month</li><li>your topic fhir</li></ul>
+<p class="note">Spotted in the fhir patch, a young specimen rooted in TypeScript. Close kin to the guide&#39;s favourite finds.</p>
+<p class="desc"><span class="desc-label">In the maintainer&#39;s words</span> A tool</p>
+<ul class="chips" aria-label="Why it made the basket"><li>~40 stars a month</li><li>your topic fhir</li></ul>
 <ul class="meta">
 <li class="meta-stars">30 stars</li>
-<li class="meta-lang">TypeScript</li>
-<li class="meta-pushed">pushed <time datetime="2026-11-20T00:00:00.000Z">Nov 20, 2026</time></li>
-
+<li class="meta-pushed">last growth <time datetime="2026-11-20T00:00:00.000Z">Nov 20, 2026</time></li>
 </ul>
 
 <div class="actions">
 <a class="btn btn-keep" href="https://github.com/acme/portal/issues/new?template=gitforage-feedback.md&amp;title=keep%3A%20a%2Fhigh&amp;labels=gitforage-feedback" aria-label="Keep a/high: opens a prefilled GitHub issue">Keep</a>
-<a class="btn btn-skip" href="https://github.com/acme/portal/issues/new?template=gitforage-feedback.md&amp;title=skip%3A%20a%2Fhigh&amp;labels=gitforage-feedback" aria-label="Skip a/high: opens a prefilled GitHub issue">Skip</a>
+<a class="btn btn-skip" href="https://github.com/acme/portal/issues/new?template=gitforage-feedback.md&amp;title=skip%3A%20a%2Fhigh&amp;labels=gitforage-feedback" aria-label="Leave it: a/high, opens a prefilled GitHub issue">Leave it</a>
 </div>
 </article>
 </li><li data-lang="en" data-lang-match="yes" data-sources="search rising" data-topics="hl7" data-score="9" data-newest="20089" data-stars="300" data-rising="4" data-rank="2">
 <article class="card" id="r-a-mid" data-card aria-labelledby="r-a-mid-t">
+<p class="spec-line"><span class="spec-no"><span class="sr-only">Specimen </span>No. 003</span><span class="spec-habitat meta-lang">Habitat: TypeScript</span><span class="spec-found">Found <time datetime="2026-11-22T06:00:00.000Z">Nov 22, 2026</time></span></p>
 <div class="card-head">
+<span class="ring" title="Tree ring: about a year old, growing this week, gaining stars fast"><svg class="ring-svg" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" focusable="false"><circle class="ring-pith" cx="12.00" cy="12.00" r="1.40"/><circle class="ring-year" cx="12.22" cy="11.88" r="5.02" stroke-width="0.90"/><circle class="ring-growth ring-fresh" cx="12.00" cy="12.00" r="9.95" stroke-width="3.30"/></svg><span class="sr-only">Tree ring: about a year old, growing this week, gaining stars fast</span></span>
 <h2 class="card-title" id="r-a-mid-t"><a href="https://github.com/a/mid"><span class="owner">a/</span>mid</a></h2>
 <p class="score" title="Fit score: the sum of the rule points"><span class="sr-only">Score </span>9</p>
-<p class="badges"><span class="badge badge-rising" title="An established repo gaining stars quickly">Rising</span><span class="badge badge-new" title="Created recently in one of these topics">New</span></p>
+<p class="badges"><span class="badge badge-rising" title="Thriving: an established repo gaining stars quickly">Thriving</span><span class="badge badge-new" title="Seedling: created recently in one of these topics">Seedlings</span></p>
 </div>
-<p class="desc">A tool</p>
-<ul class="chips" aria-label="Why it is here"><li>~90 stars a month lately</li></ul>
+<p class="note">A year-old find from in the hl7 patch, rooted in TypeScript. Putting on growth: gaining stars fast.</p>
+<p class="desc"><span class="desc-label">In the maintainer&#39;s words</span> A tool</p>
+<ul class="chips" aria-label="Why it made the basket"><li>~90 stars a month lately</li></ul>
 <ul class="meta">
 <li class="meta-stars">300 stars</li>
-<li class="meta-lang">TypeScript</li>
-<li class="meta-pushed">pushed <time datetime="2026-11-20T00:00:00.000Z">Nov 20, 2026</time></li>
-
+<li class="meta-pushed">last growth <time datetime="2026-11-20T00:00:00.000Z">Nov 20, 2026</time></li>
 </ul>
 
 <div class="actions">
 <a class="btn btn-keep" href="https://github.com/acme/portal/issues/new?template=gitforage-feedback.md&amp;title=keep%3A%20a%2Fmid&amp;labels=gitforage-feedback" aria-label="Keep a/mid: opens a prefilled GitHub issue">Keep</a>
-<a class="btn btn-skip" href="https://github.com/acme/portal/issues/new?template=gitforage-feedback.md&amp;title=skip%3A%20a%2Fmid&amp;labels=gitforage-feedback" aria-label="Skip a/mid: opens a prefilled GitHub issue">Skip</a>
+<a class="btn btn-skip" href="https://github.com/acme/portal/issues/new?template=gitforage-feedback.md&amp;title=skip%3A%20a%2Fmid&amp;labels=gitforage-feedback" aria-label="Leave it: a/mid, opens a prefilled GitHub issue">Leave it</a>
 </div>
 </article>
 </li><li data-lang="en" data-lang-match="yes" data-sources="search" data-topics="hl7" data-score="4" data-newest="20767" data-stars="900" data-rising="0" data-rank="0">
 <article class="card" id="r-a-low" data-card aria-labelledby="r-a-low-t">
+<p class="spec-line"><span class="spec-no"><span class="sr-only">Specimen </span>No. 001</span><span class="spec-habitat meta-lang">Habitat: TypeScript</span><span class="spec-found">Found <time datetime="2026-11-22T06:00:00.000Z">Nov 22, 2026</time></span></p>
 <div class="card-head">
+<span class="ring" title="Tree ring: under a year old, growing this week, no new stars measured"><svg class="ring-svg" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" focusable="false"><circle class="ring-pith" cx="12.00" cy="12.00" r="1.40"/><circle class="ring-growth ring-fresh" cx="12.00" cy="12.00" r="11.00" stroke-width="1.20"/></svg><span class="sr-only">Tree ring: under a year old, growing this week, no new stars measured</span></span>
 <h2 class="card-title" id="r-a-low-t"><a href="https://github.com/a/low"><span class="owner">a/</span>low</a></h2>
 <p class="score" title="Fit score: the sum of the rule points"><span class="sr-only">Score </span>4</p>
-<p class="badges"><span class="badge badge-new" title="Created recently in one of these topics">New</span></p>
+<p class="badges"><span class="badge badge-new" title="Seedling: created recently in one of these topics">Seedlings</span></p>
 </div>
-<p class="desc">A tool</p>
-<ul class="chips" aria-label="Why it is here"><li>your topic hl7</li></ul>
+<p class="note">A young find from in the hl7 patch, rooted in TypeScript. Fresh from the seed bed.</p>
+<p class="desc"><span class="desc-label">In the maintainer&#39;s words</span> A tool</p>
+<ul class="chips" aria-label="Why it made the basket"><li>your topic hl7</li></ul>
 <ul class="meta">
 <li class="meta-stars">900 stars</li>
-<li class="meta-lang">TypeScript</li>
-<li class="meta-pushed">pushed <time datetime="2026-11-20T00:00:00.000Z">Nov 20, 2026</time></li>
-
+<li class="meta-pushed">last growth <time datetime="2026-11-20T00:00:00.000Z">Nov 20, 2026</time></li>
 </ul>
 
 <div class="actions">
 <a class="btn btn-keep" href="https://github.com/acme/portal/issues/new?template=gitforage-feedback.md&amp;title=keep%3A%20a%2Flow&amp;labels=gitforage-feedback" aria-label="Keep a/low: opens a prefilled GitHub issue">Keep</a>
-<a class="btn btn-skip" href="https://github.com/acme/portal/issues/new?template=gitforage-feedback.md&amp;title=skip%3A%20a%2Flow&amp;labels=gitforage-feedback" aria-label="Skip a/low: opens a prefilled GitHub issue">Skip</a>
+<a class="btn btn-skip" href="https://github.com/acme/portal/issues/new?template=gitforage-feedback.md&amp;title=skip%3A%20a%2Flow&amp;labels=gitforage-feedback" aria-label="Leave it: a/low, opens a prefilled GitHub issue">Leave it</a>
 </div>
 </article>
 </li>
 </ol>
-<p class="empty" data-filter-empty hidden>No cards match these filters. <button type="button" class="filter-clear" data-filter-clear>Clear filters</button></p>
+<p class="empty" data-filter-empty hidden>Nothing in the basket matches these filters. <button type="button" class="filter-clear" data-filter-clear>Clear filters</button></p>
 "
 `;
 
 exports[`layout: density, fields, sort and filters build output snapshot: compact 1`] = `
 "<main id="main" class="wrap" tabindex="-1">
-<h1>Discover</h1>
-<p class="lede">Useful tools that fit these interests, ranked by fit rather than popularity. Every card says why it is here.</p>
-<p class="run-line">From the run on <time datetime="2026-11-22T06:00:00.000Z">Nov 22, 2026</time>: 3 repos. <a href="archive/2026-11-22-discover.html">Permalink</a> · <a href="archive/index.html">Past digests</a></p>
+<h1>This week&#39;s haul</h1>
+<p class="lede">Useful tools that fit these interests, ranked by fit rather than popularity. Every card says why it made the basket.</p>
+<p class="run-line">Brought home <time datetime="2026-11-22T06:00:00.000Z">Nov 22, 2026</time>: 3 specimens. <a href="archive/2026-11-22-discover.html">Permalink</a> · <a href="archive/index.html">Past hauls</a></p>
 <div class="view-bar" data-view-bar hidden>
 <div class="view-row">
 <label class="view-sort"><span class="view-label">Sort</span> <select data-sort-select>
@@ -115,86 +118,89 @@ exports[`layout: density, fields, sort and filters build output snapshot: compac
 <p class="view-count" data-filter-count aria-live="polite" aria-atomic="true"></p>
 </div>
 <div class="filter-row">
-<div class="filter-group" role="group" aria-label="Filter by source"><span class="view-label" aria-hidden="true">Source</span><button type="button" class="filter-chip" data-filter="source" data-value="search" aria-pressed="false">New</button><button type="button" class="filter-chip" data-filter="source" data-value="rising" aria-pressed="false">Rising</button><button type="button" class="filter-chip" data-filter="source" data-value="kin" aria-pressed="false">Like your stars</button></div>
-<div class="filter-group" role="group" aria-label="Filter by topic"><span class="view-label" aria-hidden="true">Topic</span><button type="button" class="filter-chip" data-filter="topic" data-value="hl7" aria-pressed="false">hl7</button><button type="button" class="filter-chip" data-filter="topic" data-value="fhir" aria-pressed="false">fhir</button></div>
+<div class="filter-group" role="group" aria-label="Filter by source"><span class="view-label" aria-hidden="true">Source</span><button type="button" class="filter-chip" data-filter="source" data-value="search" aria-pressed="false">Seedlings</button><button type="button" class="filter-chip" data-filter="source" data-value="rising" aria-pressed="false">Thriving</button><button type="button" class="filter-chip" data-filter="source" data-value="kin" aria-pressed="false">Kindred</button></div>
+<div class="filter-group" role="group" aria-label="Filter by topic"><span class="view-label" aria-hidden="true">Patch</span><button type="button" class="filter-chip" data-filter="topic" data-value="hl7" aria-pressed="false">hl7</button><button type="button" class="filter-chip" data-filter="topic" data-value="fhir" aria-pressed="false">fhir</button></div>
 <button type="button" class="filter-clear" data-filter-clear hidden>Clear filters</button>
 </div>
 </div>
 <ol class="cards" data-cards>
 <li data-lang="en" data-lang-match="yes" data-sources="kin" data-topics="fhir" data-score="20" data-newest="20605" data-stars="30" data-rising="2.5" data-rank="1">
 <article class="card" id="r-a-high" data-card aria-labelledby="r-a-high-t">
+<p class="spec-line"><span class="spec-no"><span class="sr-only">Specimen </span>No. 002</span><span class="spec-habitat meta-lang">Habitat: TypeScript</span><span class="spec-found">Found <time datetime="2026-11-22T06:00:00.000Z">Nov 22, 2026</time></span></p>
 <div class="card-head">
+<span class="ring" title="Tree ring: under a year old, growing this week, gaining stars"><svg class="ring-svg" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" focusable="false"><circle class="ring-pith" cx="12.00" cy="12.00" r="1.40"/><circle class="ring-growth ring-fresh" cx="12.00" cy="12.00" r="10.30" stroke-width="2.60"/></svg><span class="sr-only">Tree ring: under a year old, growing this week, gaining stars</span></span>
 <h2 class="card-title" id="r-a-high-t"><a href="https://github.com/a/high"><span class="owner">a/</span>high</a></h2>
 <p class="score" title="Fit score: the sum of the rule points"><span class="sr-only">Score </span>20</p>
-<p class="badges"><span class="badge badge-kin" title="Shares the topics and words that are unusual among the profile&#39;s stars">Like your stars</span></p>
+<p class="badges"><span class="badge badge-kin" title="Kindred: shares the topics and words that are unusual among the profile&#39;s stars">Kindred</span></p>
 </div>
-<p class="desc">A tool</p>
-<ul class="chips" aria-label="Why it is here"><li>~40 stars a month</li><li>your topic fhir</li></ul>
+<p class="note">Spotted in the fhir patch, a young specimen rooted in TypeScript. Close kin to the guide&#39;s favourite finds.</p>
+<p class="desc"><span class="desc-label">In the maintainer&#39;s words</span> A tool</p>
+<ul class="chips" aria-label="Why it made the basket"><li>~40 stars a month</li><li>your topic fhir</li></ul>
 <ul class="meta">
 <li class="meta-stars">30 stars</li>
-<li class="meta-lang">TypeScript</li>
-<li class="meta-pushed">pushed <time datetime="2026-11-20T00:00:00.000Z">Nov 20, 2026</time></li>
-
+<li class="meta-pushed">last growth <time datetime="2026-11-20T00:00:00.000Z">Nov 20, 2026</time></li>
 </ul>
 
 <div class="actions">
 <a class="btn btn-keep" href="https://github.com/acme/portal/issues/new?template=gitforage-feedback.md&amp;title=keep%3A%20a%2Fhigh&amp;labels=gitforage-feedback" aria-label="Keep a/high: opens a prefilled GitHub issue">Keep</a>
-<a class="btn btn-skip" href="https://github.com/acme/portal/issues/new?template=gitforage-feedback.md&amp;title=skip%3A%20a%2Fhigh&amp;labels=gitforage-feedback" aria-label="Skip a/high: opens a prefilled GitHub issue">Skip</a>
+<a class="btn btn-skip" href="https://github.com/acme/portal/issues/new?template=gitforage-feedback.md&amp;title=skip%3A%20a%2Fhigh&amp;labels=gitforage-feedback" aria-label="Leave it: a/high, opens a prefilled GitHub issue">Leave it</a>
 </div>
 </article>
 </li><li data-lang="en" data-lang-match="yes" data-sources="search rising" data-topics="hl7" data-score="9" data-newest="20089" data-stars="300" data-rising="4" data-rank="2">
 <article class="card" id="r-a-mid" data-card aria-labelledby="r-a-mid-t">
+<p class="spec-line"><span class="spec-no"><span class="sr-only">Specimen </span>No. 003</span><span class="spec-habitat meta-lang">Habitat: TypeScript</span><span class="spec-found">Found <time datetime="2026-11-22T06:00:00.000Z">Nov 22, 2026</time></span></p>
 <div class="card-head">
+<span class="ring" title="Tree ring: about a year old, growing this week, gaining stars fast"><svg class="ring-svg" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" focusable="false"><circle class="ring-pith" cx="12.00" cy="12.00" r="1.40"/><circle class="ring-year" cx="12.22" cy="11.88" r="5.02" stroke-width="0.90"/><circle class="ring-growth ring-fresh" cx="12.00" cy="12.00" r="9.95" stroke-width="3.30"/></svg><span class="sr-only">Tree ring: about a year old, growing this week, gaining stars fast</span></span>
 <h2 class="card-title" id="r-a-mid-t"><a href="https://github.com/a/mid"><span class="owner">a/</span>mid</a></h2>
 <p class="score" title="Fit score: the sum of the rule points"><span class="sr-only">Score </span>9</p>
-<p class="badges"><span class="badge badge-rising" title="An established repo gaining stars quickly">Rising</span><span class="badge badge-new" title="Created recently in one of these topics">New</span></p>
+<p class="badges"><span class="badge badge-rising" title="Thriving: an established repo gaining stars quickly">Thriving</span><span class="badge badge-new" title="Seedling: created recently in one of these topics">Seedlings</span></p>
 </div>
-<p class="desc">A tool</p>
-<ul class="chips" aria-label="Why it is here"><li>~90 stars a month lately</li></ul>
+<p class="note">A year-old find from in the hl7 patch, rooted in TypeScript. Putting on growth: gaining stars fast.</p>
+<p class="desc"><span class="desc-label">In the maintainer&#39;s words</span> A tool</p>
+<ul class="chips" aria-label="Why it made the basket"><li>~90 stars a month lately</li></ul>
 <ul class="meta">
 <li class="meta-stars">300 stars</li>
-<li class="meta-lang">TypeScript</li>
-<li class="meta-pushed">pushed <time datetime="2026-11-20T00:00:00.000Z">Nov 20, 2026</time></li>
-
+<li class="meta-pushed">last growth <time datetime="2026-11-20T00:00:00.000Z">Nov 20, 2026</time></li>
 </ul>
 
 <div class="actions">
 <a class="btn btn-keep" href="https://github.com/acme/portal/issues/new?template=gitforage-feedback.md&amp;title=keep%3A%20a%2Fmid&amp;labels=gitforage-feedback" aria-label="Keep a/mid: opens a prefilled GitHub issue">Keep</a>
-<a class="btn btn-skip" href="https://github.com/acme/portal/issues/new?template=gitforage-feedback.md&amp;title=skip%3A%20a%2Fmid&amp;labels=gitforage-feedback" aria-label="Skip a/mid: opens a prefilled GitHub issue">Skip</a>
+<a class="btn btn-skip" href="https://github.com/acme/portal/issues/new?template=gitforage-feedback.md&amp;title=skip%3A%20a%2Fmid&amp;labels=gitforage-feedback" aria-label="Leave it: a/mid, opens a prefilled GitHub issue">Leave it</a>
 </div>
 </article>
 </li><li data-lang="en" data-lang-match="yes" data-sources="search" data-topics="hl7" data-score="4" data-newest="20767" data-stars="900" data-rising="0" data-rank="0">
 <article class="card" id="r-a-low" data-card aria-labelledby="r-a-low-t">
+<p class="spec-line"><span class="spec-no"><span class="sr-only">Specimen </span>No. 001</span><span class="spec-habitat meta-lang">Habitat: TypeScript</span><span class="spec-found">Found <time datetime="2026-11-22T06:00:00.000Z">Nov 22, 2026</time></span></p>
 <div class="card-head">
+<span class="ring" title="Tree ring: under a year old, growing this week, no new stars measured"><svg class="ring-svg" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" focusable="false"><circle class="ring-pith" cx="12.00" cy="12.00" r="1.40"/><circle class="ring-growth ring-fresh" cx="12.00" cy="12.00" r="11.00" stroke-width="1.20"/></svg><span class="sr-only">Tree ring: under a year old, growing this week, no new stars measured</span></span>
 <h2 class="card-title" id="r-a-low-t"><a href="https://github.com/a/low"><span class="owner">a/</span>low</a></h2>
 <p class="score" title="Fit score: the sum of the rule points"><span class="sr-only">Score </span>4</p>
-<p class="badges"><span class="badge badge-new" title="Created recently in one of these topics">New</span></p>
+<p class="badges"><span class="badge badge-new" title="Seedling: created recently in one of these topics">Seedlings</span></p>
 </div>
-<p class="desc">A tool</p>
-<ul class="chips" aria-label="Why it is here"><li>your topic hl7</li></ul>
+<p class="note">A young find from in the hl7 patch, rooted in TypeScript. Fresh from the seed bed.</p>
+<p class="desc"><span class="desc-label">In the maintainer&#39;s words</span> A tool</p>
+<ul class="chips" aria-label="Why it made the basket"><li>your topic hl7</li></ul>
 <ul class="meta">
 <li class="meta-stars">900 stars</li>
-<li class="meta-lang">TypeScript</li>
-<li class="meta-pushed">pushed <time datetime="2026-11-20T00:00:00.000Z">Nov 20, 2026</time></li>
-
+<li class="meta-pushed">last growth <time datetime="2026-11-20T00:00:00.000Z">Nov 20, 2026</time></li>
 </ul>
 
 <div class="actions">
 <a class="btn btn-keep" href="https://github.com/acme/portal/issues/new?template=gitforage-feedback.md&amp;title=keep%3A%20a%2Flow&amp;labels=gitforage-feedback" aria-label="Keep a/low: opens a prefilled GitHub issue">Keep</a>
-<a class="btn btn-skip" href="https://github.com/acme/portal/issues/new?template=gitforage-feedback.md&amp;title=skip%3A%20a%2Flow&amp;labels=gitforage-feedback" aria-label="Skip a/low: opens a prefilled GitHub issue">Skip</a>
+<a class="btn btn-skip" href="https://github.com/acme/portal/issues/new?template=gitforage-feedback.md&amp;title=skip%3A%20a%2Flow&amp;labels=gitforage-feedback" aria-label="Leave it: a/low, opens a prefilled GitHub issue">Leave it</a>
 </div>
 </article>
 </li>
 </ol>
-<p class="empty" data-filter-empty hidden>No cards match these filters. <button type="button" class="filter-clear" data-filter-clear>Clear filters</button></p>
+<p class="empty" data-filter-empty hidden>Nothing in the basket matches these filters. <button type="button" class="filter-clear" data-filter-clear>Clear filters</button></p>
 "
 `;
 
 exports[`layout: density, fields, sort and filters build output snapshot: list 1`] = `
 "<main id="main" class="wrap" tabindex="-1">
-<h1>Discover</h1>
-<p class="lede">Useful tools that fit these interests, ranked by fit rather than popularity. Every card says why it is here.</p>
-<p class="run-line">From the run on <time datetime="2026-11-22T06:00:00.000Z">Nov 22, 2026</time>: 3 repos. <a href="archive/2026-11-22-discover.html">Permalink</a> · <a href="archive/index.html">Past digests</a></p>
+<h1>This week&#39;s haul</h1>
+<p class="lede">Useful tools that fit these interests, ranked by fit rather than popularity. Every card says why it made the basket.</p>
+<p class="run-line">Brought home <time datetime="2026-11-22T06:00:00.000Z">Nov 22, 2026</time>: 3 specimens. <a href="archive/2026-11-22-discover.html">Permalink</a> · <a href="archive/index.html">Past hauls</a></p>
 <div class="view-bar" data-view-bar hidden>
 <div class="view-row">
 <label class="view-sort"><span class="view-label">Sort</span> <select data-sort-select>
@@ -210,77 +216,80 @@ exports[`layout: density, fields, sort and filters build output snapshot: list 1
 <p class="view-count" data-filter-count aria-live="polite" aria-atomic="true"></p>
 </div>
 <div class="filter-row">
-<div class="filter-group" role="group" aria-label="Filter by source"><span class="view-label" aria-hidden="true">Source</span><button type="button" class="filter-chip" data-filter="source" data-value="search" aria-pressed="false">New</button><button type="button" class="filter-chip" data-filter="source" data-value="rising" aria-pressed="false">Rising</button><button type="button" class="filter-chip" data-filter="source" data-value="kin" aria-pressed="false">Like your stars</button></div>
-<div class="filter-group" role="group" aria-label="Filter by topic"><span class="view-label" aria-hidden="true">Topic</span><button type="button" class="filter-chip" data-filter="topic" data-value="hl7" aria-pressed="false">hl7</button><button type="button" class="filter-chip" data-filter="topic" data-value="fhir" aria-pressed="false">fhir</button></div>
+<div class="filter-group" role="group" aria-label="Filter by source"><span class="view-label" aria-hidden="true">Source</span><button type="button" class="filter-chip" data-filter="source" data-value="search" aria-pressed="false">Seedlings</button><button type="button" class="filter-chip" data-filter="source" data-value="rising" aria-pressed="false">Thriving</button><button type="button" class="filter-chip" data-filter="source" data-value="kin" aria-pressed="false">Kindred</button></div>
+<div class="filter-group" role="group" aria-label="Filter by topic"><span class="view-label" aria-hidden="true">Patch</span><button type="button" class="filter-chip" data-filter="topic" data-value="hl7" aria-pressed="false">hl7</button><button type="button" class="filter-chip" data-filter="topic" data-value="fhir" aria-pressed="false">fhir</button></div>
 <button type="button" class="filter-clear" data-filter-clear hidden>Clear filters</button>
 </div>
 </div>
 <ol class="cards" data-cards>
 <li data-lang="en" data-lang-match="yes" data-sources="kin" data-topics="fhir" data-score="20" data-newest="20605" data-stars="30" data-rising="2.5" data-rank="1">
 <article class="card" id="r-a-high" data-card aria-labelledby="r-a-high-t">
+<p class="spec-line"><span class="spec-no"><span class="sr-only">Specimen </span>No. 002</span><span class="spec-habitat meta-lang">Habitat: TypeScript</span><span class="spec-found">Found <time datetime="2026-11-22T06:00:00.000Z">Nov 22, 2026</time></span></p>
 <div class="card-head">
+<span class="ring" title="Tree ring: under a year old, growing this week, gaining stars"><svg class="ring-svg" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" focusable="false"><circle class="ring-pith" cx="12.00" cy="12.00" r="1.40"/><circle class="ring-growth ring-fresh" cx="12.00" cy="12.00" r="10.30" stroke-width="2.60"/></svg><span class="sr-only">Tree ring: under a year old, growing this week, gaining stars</span></span>
 <h2 class="card-title" id="r-a-high-t"><a href="https://github.com/a/high"><span class="owner">a/</span>high</a></h2>
 <p class="score" title="Fit score: the sum of the rule points"><span class="sr-only">Score </span>20</p>
-<p class="badges"><span class="badge badge-kin" title="Shares the topics and words that are unusual among the profile&#39;s stars">Like your stars</span></p>
+<p class="badges"><span class="badge badge-kin" title="Kindred: shares the topics and words that are unusual among the profile&#39;s stars">Kindred</span></p>
 </div>
-<p class="desc">A tool</p>
-<ul class="chips" aria-label="Why it is here"><li>~40 stars a month</li><li>your topic fhir</li></ul>
+<p class="note">Spotted in the fhir patch, a young specimen rooted in TypeScript. Close kin to the guide&#39;s favourite finds.</p>
+<p class="desc"><span class="desc-label">In the maintainer&#39;s words</span> A tool</p>
+<ul class="chips" aria-label="Why it made the basket"><li>~40 stars a month</li><li>your topic fhir</li></ul>
 <ul class="meta">
 <li class="meta-stars">30 stars</li>
-<li class="meta-lang">TypeScript</li>
-<li class="meta-pushed">pushed <time datetime="2026-11-20T00:00:00.000Z">Nov 20, 2026</time></li>
-
+<li class="meta-pushed">last growth <time datetime="2026-11-20T00:00:00.000Z">Nov 20, 2026</time></li>
 </ul>
 
 <div class="actions">
 <a class="btn btn-keep" href="https://github.com/acme/portal/issues/new?template=gitforage-feedback.md&amp;title=keep%3A%20a%2Fhigh&amp;labels=gitforage-feedback" aria-label="Keep a/high: opens a prefilled GitHub issue">Keep</a>
-<a class="btn btn-skip" href="https://github.com/acme/portal/issues/new?template=gitforage-feedback.md&amp;title=skip%3A%20a%2Fhigh&amp;labels=gitforage-feedback" aria-label="Skip a/high: opens a prefilled GitHub issue">Skip</a>
+<a class="btn btn-skip" href="https://github.com/acme/portal/issues/new?template=gitforage-feedback.md&amp;title=skip%3A%20a%2Fhigh&amp;labels=gitforage-feedback" aria-label="Leave it: a/high, opens a prefilled GitHub issue">Leave it</a>
 </div>
 </article>
 </li><li data-lang="en" data-lang-match="yes" data-sources="search rising" data-topics="hl7" data-score="9" data-newest="20089" data-stars="300" data-rising="4" data-rank="2">
 <article class="card" id="r-a-mid" data-card aria-labelledby="r-a-mid-t">
+<p class="spec-line"><span class="spec-no"><span class="sr-only">Specimen </span>No. 003</span><span class="spec-habitat meta-lang">Habitat: TypeScript</span><span class="spec-found">Found <time datetime="2026-11-22T06:00:00.000Z">Nov 22, 2026</time></span></p>
 <div class="card-head">
+<span class="ring" title="Tree ring: about a year old, growing this week, gaining stars fast"><svg class="ring-svg" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" focusable="false"><circle class="ring-pith" cx="12.00" cy="12.00" r="1.40"/><circle class="ring-year" cx="12.22" cy="11.88" r="5.02" stroke-width="0.90"/><circle class="ring-growth ring-fresh" cx="12.00" cy="12.00" r="9.95" stroke-width="3.30"/></svg><span class="sr-only">Tree ring: about a year old, growing this week, gaining stars fast</span></span>
 <h2 class="card-title" id="r-a-mid-t"><a href="https://github.com/a/mid"><span class="owner">a/</span>mid</a></h2>
 <p class="score" title="Fit score: the sum of the rule points"><span class="sr-only">Score </span>9</p>
-<p class="badges"><span class="badge badge-rising" title="An established repo gaining stars quickly">Rising</span><span class="badge badge-new" title="Created recently in one of these topics">New</span></p>
+<p class="badges"><span class="badge badge-rising" title="Thriving: an established repo gaining stars quickly">Thriving</span><span class="badge badge-new" title="Seedling: created recently in one of these topics">Seedlings</span></p>
 </div>
-<p class="desc">A tool</p>
-<ul class="chips" aria-label="Why it is here"><li>~90 stars a month lately</li></ul>
+<p class="note">A year-old find from in the hl7 patch, rooted in TypeScript. Putting on growth: gaining stars fast.</p>
+<p class="desc"><span class="desc-label">In the maintainer&#39;s words</span> A tool</p>
+<ul class="chips" aria-label="Why it made the basket"><li>~90 stars a month lately</li></ul>
 <ul class="meta">
 <li class="meta-stars">300 stars</li>
-<li class="meta-lang">TypeScript</li>
-<li class="meta-pushed">pushed <time datetime="2026-11-20T00:00:00.000Z">Nov 20, 2026</time></li>
-
+<li class="meta-pushed">last growth <time datetime="2026-11-20T00:00:00.000Z">Nov 20, 2026</time></li>
 </ul>
 
 <div class="actions">
 <a class="btn btn-keep" href="https://github.com/acme/portal/issues/new?template=gitforage-feedback.md&amp;title=keep%3A%20a%2Fmid&amp;labels=gitforage-feedback" aria-label="Keep a/mid: opens a prefilled GitHub issue">Keep</a>
-<a class="btn btn-skip" href="https://github.com/acme/portal/issues/new?template=gitforage-feedback.md&amp;title=skip%3A%20a%2Fmid&amp;labels=gitforage-feedback" aria-label="Skip a/mid: opens a prefilled GitHub issue">Skip</a>
+<a class="btn btn-skip" href="https://github.com/acme/portal/issues/new?template=gitforage-feedback.md&amp;title=skip%3A%20a%2Fmid&amp;labels=gitforage-feedback" aria-label="Leave it: a/mid, opens a prefilled GitHub issue">Leave it</a>
 </div>
 </article>
 </li><li data-lang="en" data-lang-match="yes" data-sources="search" data-topics="hl7" data-score="4" data-newest="20767" data-stars="900" data-rising="0" data-rank="0">
 <article class="card" id="r-a-low" data-card aria-labelledby="r-a-low-t">
+<p class="spec-line"><span class="spec-no"><span class="sr-only">Specimen </span>No. 001</span><span class="spec-habitat meta-lang">Habitat: TypeScript</span><span class="spec-found">Found <time datetime="2026-11-22T06:00:00.000Z">Nov 22, 2026</time></span></p>
 <div class="card-head">
+<span class="ring" title="Tree ring: under a year old, growing this week, no new stars measured"><svg class="ring-svg" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" focusable="false"><circle class="ring-pith" cx="12.00" cy="12.00" r="1.40"/><circle class="ring-growth ring-fresh" cx="12.00" cy="12.00" r="11.00" stroke-width="1.20"/></svg><span class="sr-only">Tree ring: under a year old, growing this week, no new stars measured</span></span>
 <h2 class="card-title" id="r-a-low-t"><a href="https://github.com/a/low"><span class="owner">a/</span>low</a></h2>
 <p class="score" title="Fit score: the sum of the rule points"><span class="sr-only">Score </span>4</p>
-<p class="badges"><span class="badge badge-new" title="Created recently in one of these topics">New</span></p>
+<p class="badges"><span class="badge badge-new" title="Seedling: created recently in one of these topics">Seedlings</span></p>
 </div>
-<p class="desc">A tool</p>
-<ul class="chips" aria-label="Why it is here"><li>your topic hl7</li></ul>
+<p class="note">A young find from in the hl7 patch, rooted in TypeScript. Fresh from the seed bed.</p>
+<p class="desc"><span class="desc-label">In the maintainer&#39;s words</span> A tool</p>
+<ul class="chips" aria-label="Why it made the basket"><li>your topic hl7</li></ul>
 <ul class="meta">
 <li class="meta-stars">900 stars</li>
-<li class="meta-lang">TypeScript</li>
-<li class="meta-pushed">pushed <time datetime="2026-11-20T00:00:00.000Z">Nov 20, 2026</time></li>
-
+<li class="meta-pushed">last growth <time datetime="2026-11-20T00:00:00.000Z">Nov 20, 2026</time></li>
 </ul>
 
 <div class="actions">
 <a class="btn btn-keep" href="https://github.com/acme/portal/issues/new?template=gitforage-feedback.md&amp;title=keep%3A%20a%2Flow&amp;labels=gitforage-feedback" aria-label="Keep a/low: opens a prefilled GitHub issue">Keep</a>
-<a class="btn btn-skip" href="https://github.com/acme/portal/issues/new?template=gitforage-feedback.md&amp;title=skip%3A%20a%2Flow&amp;labels=gitforage-feedback" aria-label="Skip a/low: opens a prefilled GitHub issue">Skip</a>
+<a class="btn btn-skip" href="https://github.com/acme/portal/issues/new?template=gitforage-feedback.md&amp;title=skip%3A%20a%2Flow&amp;labels=gitforage-feedback" aria-label="Leave it: a/low, opens a prefilled GitHub issue">Leave it</a>
 </div>
 </article>
 </li>
 </ol>
-<p class="empty" data-filter-empty hidden>No cards match these filters. <button type="button" class="filter-clear" data-filter-clear>Clear filters</button></p>
+<p class="empty" data-filter-empty hidden>Nothing in the basket matches these filters. <button type="button" class="filter-clear" data-filter-clear>Clear filters</button></p>
 "
 `;
