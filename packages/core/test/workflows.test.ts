@@ -97,7 +97,7 @@ describe("template and demo files", () => {
     expect(c.topics).toEqual(["hl7", "fhir", "mirth", "dicom", "proxmox", "self-hosted", "docker", "home-assistant", "zigbee", "matter",
       "cli", "terminal", "devtools", "claude-code", "mcp", "ai-agents"]);
     expect(c.stars_from).toBeNull();
-    expect(c.site.analytics).toBeNull();
+    expect(c.site.analytics).toEqual({ provider: "goatcounter", code: "gitforage" });
   });
 
   test("the template's feedback.yml parses", () => {
