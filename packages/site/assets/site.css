@@ -527,6 +527,8 @@ h2 { font-size: 1.35rem; line-height: 1.25; margin: 2.25rem 0 0.5rem; }
 
 .archive, .topic-list, .seed-list { padding-left: 1.2rem; }
 .archive li, .topic-list li { margin: 0.35rem 0; }
+.topic-group h2 { margin-top: 1.75rem; }
+.topic-quiet { margin-top: 2rem; font-size: 0.9rem; }
 .arch-date { display: inline-block; min-width: 8rem; font-family: var(--mono); font-size: 0.88rem; font-weight: 600; }
 .source-key { padding-left: 1.2rem; }
 .source-key li { margin: 0.45rem 0; }

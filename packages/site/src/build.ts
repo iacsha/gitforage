@@ -8,7 +8,7 @@ import { catalogFile } from "./personalize.ts";
 import { atomFeed } from "./feed.ts";
 import { backtestPage } from "./backtest.ts";
 import { haulFiles } from "./haul.ts";
-import { aboutPage, archivePage, digestPage, modePage, pagesUrl, revivalPage, topicPage, topicsIndexPage, type SiteContext } from "./render.ts";
+import { aboutPage, archivePage, digestPage, modePage, pagesUrl, revivalPage, topicPage, topicPageTopics, topicsIndexPage, type SiteContext, type TopicCatalog } from "./render.ts";
 
 const ASSETS = ["site.css", "site.js", "theme.js", "icon.svg", "paper.svg", "paper-night.svg"];
 /** The heading font's license travels with it (SIL OFL 1.1), published at a lowercase path. */
@@ -57,14 +57,17 @@ export function renderSite(cfg: Config, digests: Digest[], o: BuildOptions = {})
   files.set("backtest.html", backtestPage(ctx));
   files.set("archive/index.html", archivePage(ctx, digests));
   for (const d of digests) files.set(`archive/${d.date}-${d.mode}.html`, digestPage(ctx, d));
-  files.set("topics/index.html", topicsIndexPage(ctx, digests));
-  for (const t of cfg.topics) files.set(`topics/${t}.html`, topicPage(ctx, digests, t));
+  // catalog.json, made once: the Topics pages group and count by it too.
+  const cat = cfg.site.personalize.enabled ? catalogFile(cfg, o.catalog ?? null, ctx.portal) : null;
+  const topicCat: TopicCatalog | null = cat ? { generated_at: cat.generated_at || ctx.updated, items: cat.items } : null;
+  files.set("topics/index.html", topicsIndexPage(ctx, digests, topicCat));
+  for (const t of topicPageTopics(cfg, digests, topicCat)) files.set(`topics/${t}.html`, topicPage(ctx, digests, t, topicCat));
   for (const [p, body] of haulFiles(ctx, digests, o.haulNotes ?? undefined)) files.set(p, body);
   files.set("feed.xml", atomFeed(digests, { title: cfg.site.title, baseUrl: ctx.baseUrl, updated: ctx.updated }));
   for (const a of ASSETS) files.set(`assets/${a}`, readFileSync(join(assetDir, a), "utf8"));
   files.set(FONT_LICENSE[1], readFileSync(join(assetDir, FONT_LICENSE[0]), "utf8"));
   if (cfg.site.personalize.enabled) {
-    files.set("catalog.json", JSON.stringify(catalogFile(cfg, o.catalog ?? null, ctx.portal)));
+    files.set("catalog.json", JSON.stringify(cat));
     for (const a of PERSONALIZE_ASSETS) files.set(`assets/${a}`, readFileSync(join(assetDir, a), "utf8"));
   }
   return files;

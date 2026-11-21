@@ -4,7 +4,7 @@
 
 import {
   catalogTopics, CARD_FIELDS, DENSITIES, isLanguageCode, isSafeFullName, LANGUAGES, normaliseBaseUrl, repoUrl, SORTS, withMode,
-  type CardField, type Config, type Density, type Digest, type DigestItem, type Mode, type RevivalItem, type SiteConfig, type SortKey, type Weights,
+  type CardField, type CatalogItem, type Config, type Density, type Digest, type DigestItem, type Mode, type RevivalItem, type SiteConfig, type SortKey, type Weights,
 } from "@gitforage/core";
 import { href, html, trusted, type Html } from "./html.ts";
 import { localMarks, personalBar, personalList, pickDialog } from "./personalize.ts";
@@ -566,16 +566,87 @@ export function itemsForTopic(digests: Digest[], topic: string, max = 60): { ite
   return out;
 }
 
-export function topicsIndexPage(ctx: SiteContext, digests: Digest[]): string {
-  const rows = ctx.cfg.topics.map((t) => html`<li><a href="${href(`${t}.html`)}">${t}</a> <span class="muted">(${plural(itemsForTopic(digests, t).length, "repo")})</span></li>`);
-  const body = html`<h1>${STRINGS.topicsTitle}</h1>
+/** The catalog behind the Topics pages: catalog.json's items (already validated) and when they were found. */
+export interface TopicCatalog { generated_at: string; items: CatalogItem[] }
+
+/** A catalog find as a card: its base score (no topic term), no maintainer data. Null for anything without a plain name. */
+export function catalogDigestItem(c: CatalogItem): DigestItem | null {
+  const url = repoUrl(c.full_name);
+  if (!url) return null;
+  return {
+    full_name: c.full_name, url, score: c.base, stars: c.stars, language: c.language, description: c.description, sources: c.sources,
+    reasons: c.reasons, topics: c.topics, via_topics: [], created_at: c.created_at, pushed_at: c.pushed_at, lang: c.lang, health: null,
+  };
+}
+
+/**
+ * Finds for a topic: every digest listing first (newest first), then the latest
+ * catalog's finds carrying it, best base score first. Each repo once, at most max.
+ */
+export function topicFinds(digests: Digest[], catalog: TopicCatalog | null, topic: string, max = 60): { item: DigestItem; listed: string }[] {
+  const out = itemsForTopic(digests, topic, max);
+  if (!catalog || out.length >= max) return out;
+  const seen = new Set(out.map((x) => x.item.full_name.toLowerCase()));
+  const extra = catalog.items.filter((c) => c.topics.includes(topic)).sort((a, b) => b.base - a.base || b.stars - a.stars);
+  for (const c of extra) {
+    const it = catalogDigestItem(c);
+    if (!it || seen.has(it.full_name.toLowerCase())) continue;
+    seen.add(it.full_name.toLowerCase());
+    out.push({ item: it, listed: catalog.generated_at });
+    if (out.length >= max) break;
+  }
+  return out;
+}
+
+/**
+ * The topics that get a page: the portal's own, always, and with a catalog every
+ * catalog topic that has finds.
+ */
+export function topicPageTopics(cfg: Config, digests: Digest[], catalog: TopicCatalog | null): string[] {
+  const own = cfg.topics.filter((t) => TOPIC_RE.test(t));
+  if (!cfg.site.personalize.enabled) return own;
+  const more = catalogTopics(cfg).filter((t) => TOPIC_RE.test(t) && !own.includes(t) && topicFinds(digests, catalog, t, 1).length > 0);
+  return [...own, ...more];
+}
+
+/**
+ * The Topics page. With a personalize catalog it is grouped like the picker, in
+ * config order, each patch with its count of finds; patches with nothing found yet
+ * are listed once, quietly, at the end. Without one, the portal's own topics.
+ */
+export function topicsIndexPage(ctx: SiteContext, digests: Digest[], catalog: TopicCatalog | null = null): string {
+  const cfg = ctx.cfg;
+  const row = (t: string, n: number) => html`<li><a href="${href(`${t}.html`)}">${t}</a> <span class="muted">(${plural(n, "find")})</span></li>`;
+  const groups = cfg.site.personalize.enabled ? cfg.site.personalize.groups : [];
+  let body: Html;
+  if (groups.length) {
+    const quiet: string[] = [];
+    const sections = groups.map((g) => {
+      const rows = g.topics.filter((t) => TOPIC_RE.test(t)).map((t) => {
+        const n = topicFinds(digests, catalog, t).length;
+        if (!n && !cfg.topics.includes(t)) { quiet.push(t); return null; }
+        return row(t, n);
+      }).filter((x): x is Html => x !== null);
+      return rows.length ? html`<section class="topic-group">
+<h2>${g.name}</h2>
+<ul class="topic-list">${rows}</ul>
+</section>
+` : "";
+    });
+    body = html`<h1>${STRINGS.topicsTitle}</h1>
+<p class="lede">${STRINGS.topicsLedeGrouped}</p>
+${sections}${quiet.length ? html`<p class="muted topic-quiet">${STRINGS.topicsQuiet} ${quiet.join(", ")}.</p>` : ""}`;
+  } else {
+    const rows = cfg.topics.map((t) => html`<li><a href="${href(`${t}.html`)}">${t}</a> <span class="muted">(${plural(itemsForTopic(digests, t).length, "repo")})</span></li>`);
+    body = html`<h1>${STRINGS.topicsTitle}</h1>
 <p class="lede">${STRINGS.topicsLede}</p>
 ${rows.length ? html`<ul class="topic-list">${rows}</ul>` : emptyState("This portal has no topics configured; it forages by keywords, seeds or stars.")}`;
+  }
   return page(ctx, { title: STRINGS.topicsTitle, description: "Repos by topic", root: "../", path: "topics/index.html", nav: "topics", body });
 }
 
-export function topicPage(ctx: SiteContext, digests: Digest[], topic: string): string {
-  const list = itemsForTopic(digests, topic);
+export function topicPage(ctx: SiteContext, digests: Digest[], topic: string, catalog: TopicCatalog | null = null): string {
+  const list = topicFinds(digests, catalog, topic);
   const body = html`<p class="crumbs"><a href="${href("index.html")}">${STRINGS.topicsTitle}</a></p>
 <h1>${topic}</h1>
 <p class="lede">Everything found in the <strong>${topic}</strong> patch, on every walk so far.</p>

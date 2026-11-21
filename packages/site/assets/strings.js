@@ -47,6 +47,8 @@ export const STRINGS = Object.freeze({
   topicsNav: "Topics",
   topicsTitle: "Patches",
   topicsLede: "The patches this portal forages, and what it has found in each.",
+  topicsLedeGrouped: "Every patch this guide walks, grouped as in Pick your patch. Open one to see what has turned up there.",
+  topicsQuiet: "Walked, nothing found yet:",
   archiveNav: "Archive",
   archiveTitle: "Past hauls",
   archiveLede: "Every haul this portal has brought home, newest first.",

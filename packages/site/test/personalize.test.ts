@@ -507,3 +507,41 @@ describe("personalize-core.js: carry your patch (export and import)", () => {
     expect(core.isOwnBlobUrl("blob:null/0b5a8c1e-2f3d-4a5b-9c6d-7e8f9a0b1c2d", "null")).toBe(false);
   });
 });
+
+describe("the Topics page with a catalog", () => {
+  const build = (catalog: CatalogState | null, digests: Digest[] = []) => renderSite(config(), digests, { now: NOW, catalog });
+
+  test("groups follow the picker in config order, with find counts; quiet patches listed once at the end", () => {
+    const files = build(state([item("r/one", ["rust"], 5), item("r/two", ["rust", "golang"], 4), item("h/one", ["dicom"], 3)]), [digest([dItem("a/one")])]);
+    const page = files.get("topics/index.html")!;
+    const heads = [...page.matchAll(/<section class="topic-group">\n<h2>([^<]+)<\/h2>/g)].map((m) => m[1]);
+    expect(heads).toEqual(["Healthcare", "Rust &amp; Go"]);
+    const rows = [...page.matchAll(/<li><a href="([a-z0-9-]+)\.html">([a-z0-9-]+)<\/a> <span class="muted">\((\d+) finds?\)<\/span><\/li>/g)].map((m) => `${m[2]}:${m[3]}`);
+    // Own topics always show (fhir has nothing yet); catalog topics only with finds.
+    expect(rows).toEqual(["hl7:1", "fhir:0", "dicom:1", "rust:2", "golang:1"]);
+    expect(page).toContain('<p class="muted topic-quiet">Walked, nothing found yet: games.</p>');
+    expect(page).toContain("grouped as in Pick your patch");
+    // Every linked patch has a page, and quiet ones do not.
+    for (const t of ["hl7", "fhir", "dicom", "rust", "golang"]) expect(files.has(`topics/${t}.html`)).toBe(true);
+    expect(files.has("topics/games.html")).toBe(false);
+    // A catalog patch page shows the catalog's finds as cards, best base score first.
+    const rust = files.get("topics/rust.html")!;
+    expect([...rust.matchAll(/<article class="card" id="r-([a-z-]+)"/g)].map((m) => m[1])).toEqual(["r-one", "r-two"]);
+  });
+
+  test("hostile catalog entries never reach the Topics pages", () => {
+    const files = build(state([item("evil/<script>", ["rust"], 9), item("r/ok", ["rust"], 1, { description: HOSTILE })]));
+    const rust = files.get("topics/rust.html")!;
+    expect(rust).not.toContain("<script>alert");
+    expect(rust).not.toContain("<img");
+    expect(rust).not.toContain("evil/");
+    expect(files.get("topics/index.html")).toContain(">rust</a> <span class=\"muted\">(1 find)</span>");
+  });
+
+  test("without a catalog the page keeps the portal's own topics, ungrouped", () => {
+    const off = renderSite(config(null), [digest([dItem("a/one")])], { now: NOW }).get("topics/index.html")!;
+    expect(off).not.toContain("topic-group");
+    expect(off).toContain('<ul class="topic-list"><li><a href="hl7.html">hl7</a> <span class="muted">(1 repo)</span></li><li><a href="fhir.html">fhir</a> <span class="muted">(0 repos)</span></li></ul>');
+    expect(renderSite(config(null), [], { now: NOW }).has("topics/rust.html")).toBe(false);
+  });
+});

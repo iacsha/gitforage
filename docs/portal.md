@@ -6,7 +6,7 @@
 
 - **Discover** (the home page): the latest discover-mode run, useful tools ranked by fit.
 - **Get involved:** the latest contribute-mode run, with a maintainer line on each card (outside pull requests merged in 90 days, share of recent issues answered) when the run has that data.
-- **Topics:** a page per topic in `interests.yml`, with everything listed for it so far.
+- **Topics:** a page per topic in `interests.yml`, with everything listed for it so far. With [personalization](#pick-your-topics) on, the page is grouped like the picker (`catalog.groups`, in config order), each topic with its count of finds, and every catalog topic with finds gets a page too (digest listings first, then the latest catalog's finds). Topics with nothing found yet are listed once, quietly, at the end.
 - **Archive:** every past digest.
 - **About:** what the portal looks for, how scoring works (with this portal's actual weights), how Keep and Skip work, and how to run your own.
 - **`feed.xml`:** an Atom 1.0 feed with an entry per listed repo.
