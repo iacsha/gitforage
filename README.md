@@ -2,437 +2,55 @@
 
 # gitforage
 
-*A field guide to GitHub.* Live demo: **[gitforage.dev](https://gitforage.dev)**
+*A field guide to GitHub.* See it live at **[gitforage.dev](https://gitforage.dev)** (beta).
 
-gitforage goes out each week and forages GitHub for projects worth your time, including the young ones that trending lists overlook. You mark out your patch once in `interests.yml`, and it brings back four kinds of finds:
+gitforage goes out each week and forages GitHub for projects worth your time, including the young ones that trending lists overlook. You mark out your patch once in `interests.yml`, and it brings back:
 
-1. **Seedlings:** new repos sprouting in your topics and keywords.
-2. **Thriving:** established repos in your patch that are suddenly growing fast.
-3. **Wild forks:** forks of projects you follow that are ahead of upstream and still being tended. This is how you find the living branch of a project whose upstream has gone quiet.
-4. **Kindred:** repos that share what is unusually common among your own stars.
+- **Seedlings:** new repos sprouting in your topics and keywords.
+- **Thriving:** established repos in your patch that are suddenly growing fast.
+- **Wild forks and revivals:** forks that are ahead of upstream and still tended, including the living branch of a project whose upstream has gone quiet.
+- **Kindred:** repos that share what is unusually common among your own stars.
 
-Every find comes with a field note and its reasons ("3 of your topics, ~40 stars a month, top 10% in hl7, like your stars: hl7, mllp"), so you can see why it made the haul. gitforage ranks by fit to you, not by popularity. It remembers what it has already shown you, and your Keep and Leave-it marks move the ranking.
+Every find comes with a field note and its reasons ("3 of your topics, ~40 stars a month, top 10% in hl7"), so you can see why it made the haul. gitforage ranks by fit to you, not by popularity. It remembers what it has shown you, and your Keep and Skip marks move the ranking.
 
-## Status
-
-Milestones 1 to 3.6 are done:
-
-- The core library and a command-line tool: kin learned from your own stars, rising older repos, popularity scaled within each topic, regex and keyword exclusions, and `feedback.yml` Keep/Skip marks feeding the score. Rules only, no LLM.
-- A static portal (Discover and Get involved tabs, topics, an archive, an About page) with an Atom feed, built by `gitforage site`.
-- Keep and Skip buttons on every card, folded into `feedback.yml` by `gitforage feedback`.
-- A spoken-language filter, a star-farm guard, and Theme and Language buttons on the portal.
-- Optional browser-side personalization: a "Pick your topics" panel over a bigger topic catalog, starter packs, "Use my GitHub stars", local Keep and Skip, and shareable `?t=` links. The demo turns it on.
-- A template repo (in [`template/`](template)) with two GitHub Actions workflows: a weekly forage that deploys the portal to GitHub Pages, and a feedback workflow.
-
-It runs with [bun](https://bun.sh), on your machine or in GitHub Actions.
-
-Coming, and not built yet:
-
-- **Notifications:** ntfy, Telegram, Slack/Discord webhooks, email.
-- **Optional LLM re-rank** against your `profile`.
-- **A one-click template repo and a public demo portal**, with the first release.
-
-Screenshots: coming with the public demo.
+The portal is a static site with an Atom feed, a weekly issue called The Haul, a Get involved tab for contributors, and optional in-browser personalization. Rules only, no LLM, no server.
 
 ## Run your own
 
-Your own portal takes about five minutes and needs no server and no paid key. Everything runs in GitHub Actions on your repo.
+About five minutes, no server, no paid key. Everything runs in GitHub Actions on your own repo.
 
-1. **Create the repo.** Make a new GitHub repo and copy the contents of [`template/`](template) into it, including the hidden `.github` folder. (With the first release this becomes a "Use this template" button.)
-2. **Check the pinned version.** Both workflows run gitforage from a pinned commit: `GITFORAGE_SHA` near the top of `.github/workflows/forage.yml` and `feedback.yml`. A released template has it filled in. If you copied `template/` from `main`, set both to the gitforage commit you want to run. The workflows refuse to run with the all-zero placeholder.
-3. **Describe your interests** in `interests.yml`: a few topics, some seeds, or your username in `stars_from`. The file is commented, and the full reference is [below](#interestsyml).
-4. **Turn on Pages:** Settings, Pages, Source: **GitHub Actions**.
-5. **Run it:** Actions, **forage**, Run workflow. When it finishes, your portal is at `https://<you>.github.io/<repo>/`. After that it runs every Sunday.
-6. **Optional:** create a label named `gitforage-feedback` (Issues, Labels) so feedback issues get labelled. The title alone is enough for the workflow to find them.
+1. Make a new repo and copy in [`template/`](template), including the hidden `.github` folder.
+2. Edit `interests.yml`: a few topics, some seed projects, or your username in `stars_from`.
+3. Settings, Pages, Source: **GitHub Actions**.
+4. Actions, **forage**, Run workflow. Your portal appears at `https://<you>.github.io/<repo>/` and then updates every Sunday.
 
-No secrets are needed. The workflows use the repo's built-in `GITHUB_TOKEN`, with only the permissions each job needs.
+The workflows need no secrets, and run gitforage from one pinned commit (`GITFORAGE_SHA`). Details: [docs/development.md](docs/development.md#why-a-pinned-commit).
 
-### Why a pinned commit
-
-The template does not install gitforage from a package registry or a moving tag. Each workflow checks out `iacsha/gitforage` at one full commit SHA, checks that it got exactly that commit, and installs its dependencies with `bun install --frozen-lockfile`, so every package is verified against the hashes in the committed `bun.lock`. A tag can be moved and a registry package can be replaced; a commit SHA cannot. To upgrade, change `GITFORAGE_SHA` on purpose. Dependabot keeps the pinned actions current, but it does not touch `GITFORAGE_SHA`.
-
-## The portal
-
-`gitforage site` builds a static site from the digests that `run` keeps in `state/digests/`:
-
-- **Discover** (the home page): the latest discover-mode run, useful tools ranked by fit.
-- **Get involved:** the latest contribute-mode run, with a maintainer line on each card (outside pull requests merged in 90 days, share of recent issues answered) when the run has that data.
-- **Topics:** a page per topic in `interests.yml`, with everything listed for it so far.
-- **Archive:** every past digest.
-- **About:** what the portal looks for, how scoring works (with this portal's actual weights), how Keep and Skip work, and how to run your own.
-- **`feed.xml`:** an Atom 1.0 feed with an entry per listed repo.
-
-Each card shows the repo (linked to GitHub), its description, a source badge (**New**, **Rising**, **Live fork** or **Like your stars**), the top scoring reasons as chips, stars, language and last push, and Keep and Skip buttons. Keys: `j` and `k` move between cards, `Enter` opens one.
-
-The site is plain HTML and CSS with two small same-origin scripts (and, with [personalization](#pick-your-topics) on, a third on the Discover page). It uses system fonts, works on a phone, and loads nothing from other hosts unless you turn on analytics. With personalization on, a visitor's browser calls `api.github.com` only when they press "Use my GitHub stars".
-
-Two buttons sit in the header, next to the Density control (see [Layout](#layout)):
-
-- **Theme** cycles System, Light and Dark. System follows your device's setting. The choice is saved in your browser, and `assets/theme.js` applies it before the page paints, so there is no flash of the wrong theme.
-- **Language** ("English only" by default when `filters.spoken_languages: [en]`) shows or hides cards in other languages. Each card carries its detected language. The default is the config's, and it holds without JavaScript, because the hiding is plain CSS set by the server. The choice is saved like the theme.
-
-Both buttons stay hidden without JavaScript. If the browser blocks storage, the page still works and the choice lasts for that page.
-
-### Layout
-
-Visitors can change how the cards look. The portal's defaults come from `site.layout` in `interests.yml`:
-
-```yaml
-site:
-  layout:
-    density: compact      # comfortable (default), compact or list
-    sort: score           # score (default), newest, stars or rising
-    fields: { reasons: true, health: true, language: true, stars: true }
-```
-
-- **Density** sits next to Theme and Language. **Comfortable** is the full card. **Compact** uses smaller text and tighter cards, two to four columns on a wide screen (one on a phone), with descriptions cut to three lines and reasons to two rows. **List** is one dense row per repo: name, score, top reason, stars, language, and Keep and Skip. On a phone each row stacks into three short lines.
-- **View** turns card fields on or off: reasons, the maintainer line (Get involved), language and stars.
-- **Sort** orders by score, newest repo, stars, or **rising** (the points the star-velocity and star-growth rules gave). The keys `j` and `k` follow the order shown.
-- **Filter chips** narrow the list by source (New, Rising, Live fork, Like your stars) and by topic (your topics that appear on the page). Chips in one group widen the match, and groups narrow it: "Rising" plus "hl7" plus "fhir" shows rising repos in hl7 or fhir. The bar shows "N shown of M" and announces it to screen readers.
-
-Density, fields and sort are saved in the browser like the theme, and `theme.js` applies density and fields before the page paints. Filters last for the page. Without JavaScript the controls stay hidden and the page uses the config's density, fields and order, because the server writes them into the HTML.
-
-**Analytics** are off by default. For cookieless visit counts with [GoatCounter](https://www.goatcounter.com), create a GoatCounter site and add `analytics: { provider: goatcounter, code: <your code> }` under `site:`. The script is loaded with a subresource integrity hash, and only GoatCounter's own origins are added to the Content-Security-Policy. With [personalization](#pick-your-topics) on, picking a starter pack or a topic is also counted as a GoatCounter event (`pick-pack-<id>`, `pick-topic-<topic>`, `pick-stars-used`): fixed names over the catalog's own slugs, never a username or anything typed.
-
-### Pick your topics
-
-A portal can let each visitor re-rank it for their own interests, in their browser, with no server and no account. Turn it on with `site.personalize`:
-
-```yaml
-site:
-  personalize:
-    enabled: true
-    catalog:
-      per_topic: 25            # best candidates kept per topic (1 to 100)
-      groups:                  # the picker's groups, in order
-        - name: Healthcare interoperability
-          topics: [hl7, fhir, dicom, ehr]
-        - name: Rust, Go and TypeScript
-          topics: [rust, golang, typescript]
-      topics: [gamedev]        # more topics, shown under "More topics"
-    packs:                     # starter packs: one click picks their topics
-      - { id: healthcare-dev, name: Healthcare dev, topics: [hl7, fhir, dicom] }
-```
-
-The catalog is the groups' topics, `catalog.topics` and your own `topics` (at most 150). The default view does not change: the Discover page still shows the digest for your own topics, rendered by the server, and that is all a visitor without JavaScript sees.
-
-**What the forage does.** In discover mode, `run` also searches every catalog topic that is not one of your topics: one search for new repos and one for rising repos each, as for your own topics. Candidates found only by those searches are kept out of your digest. Every candidate is then scored again with the catalog topics, and its score without the `topic_match` term (the base score), its other reasons, star velocity, sources and detected spoken language go into `state/catalog.json`. The site writes them to `catalog.json`. Only the best `per_topic` candidates of each topic are kept (by base score), at most 2,500 in all, and the file has a 1.6 MB budget: when the catalog would be bigger, the per-topic cap is lowered until it fits. That keeps `catalog.json` well under 400 KB gzipped. Exclusions, the language filter and the star-farm guard apply to the catalog as to the digest. Activity signals (releases, README, contributing) are only fetched for the digest's top `signals_top`, so most catalog cards score without them.
-
-**What the visitor sees.** A **Pick your topics** button above the Discover list opens a dialog with:
-
-- **Starter packs**, which tick their topics.
-- **Use my GitHub stars**: a username field. The visitor's browser reads up to three pages of `https://api.github.com/users/<name>/starred` itself, without a token. gitforage weighs each catalog topic by how much more common it is on those stars than in the catalog (lift) and ticks the strongest few. Only the topics and their weights are kept, with the date, in the browser; the username and the starred repos are not stored anywhere. A missing user, GitHub's rate limit (60 unauthenticated lookups an hour per network, shown as "try again later") and network errors each get a plain message.
-- **Topics**: a searchable checklist, grouped as configured, with a live "N repos for M topics" count.
-- **Clear my local marks.**
-
-**Show** re-ranks the catalog in the browser: each repo's base score plus `topic_match` for every picked topic it carries (up to three, as on the server, with the same "2 of your topics (hl7, fhir)" reason), plus any local marks. Repos with none of the picked topics are hidden. The bar then says "N repos for your topics", with **Copy link** and **Reset to the default view**. The dialog is a modal `<dialog>`: focus stays inside it, Esc closes it, and focus goes back to the button.
-
-**Local Keep and Skip.** Every card on the Discover page also gets **More like this** and **Hide** buttons that work in this browser only, for visitors without a GitHub account. Hide removes the repo here; both nudge repos with the same topics, owner and language, the way `feedback.yml` does on the server (`tanh(net / 2)` per key). The GitHub-issue Keep and Skip buttons stay as they are.
-
-**Links.** `?t=hl7,fhir` and `?pack=healthcare-dev` open that view. Both are checked against the catalog's topics and pack ids, and anything else (or a value over 600 characters) is ignored. The address updates as the view changes (`history.replaceState`), so it can be bookmarked or shared.
-
-**Saved in the browser:** `gitforage-picks` (the topics and pack), `gitforage-marks` (repo, mark, and the repo's topics and language, at most 500) and `gitforage-stars` (topic weights and a date, kept 30 days). Each is schema-checked when read and dropped when it does not fit.
-
-**API budget.** The extra cost is two searches per extra catalog topic, all on the search limit (30 a minute, including for the Actions `GITHUB_TOKEN`), plus nothing on the core limit. The demo's 96 topics (80 beyond its own) add 160 searches. Measured on 2026-11-20 with a cold cache and the Actions-sized `GITHUB_TOKEN` limits: a full discover run took 364 API requests and about 8 minutes (123 s of that waiting for the search limit), and the contribute run after it 101 requests (166 answered from cache) and under a minute, so about 465 requests and 9 minutes for a week. That is far inside a scheduled run's limits, so the whole catalog is foraged every week and no topic rotation is needed. It scored 1,908 catalog candidates, kept 1,363 (25 per topic), and `catalog.json` came to 0.91 MB raw and 0.19 MB gzipped. Each extra topic adds two searches, about 4 seconds at the search limit.
-
-## Keep and Skip
-
-The Keep and Skip buttons are links to a prefilled new issue on the portal's repo, titled `keep: owner/name` or `skip: owner/name`. Submitting it is the vote. The feedback workflow then:
-
-1. reads the issue that triggered it and every other open issue, so none are missed when several arrive at once;
-2. runs `gitforage feedback`, which checks each one and appends accepted marks to `feedback.yml`;
-3. commits `feedback.yml`, replies on each feedback issue with what happened, and closes it.
-
-Rules for a mark to count:
-
-- The title must be exactly `keep: owner/name` or `skip: owner/name`. Nothing else in the issue is read.
-- Bots are ignored.
-- Owners, members and collaborators of the portal repo make **owner** marks. Anyone else makes **visitor** marks, unless `feedback.visitors` is `false`.
-- Visitors need an account at least `feedback.min_account_age_days` old (30 by default), can add at most `feedback.max_per_user` marks a day (3), and can only mark repos the portal has listed.
-- A visitor mark counts `feedback.visitor_weight` (0.25) of an owner mark, and only an owner's Skip hides a repo.
-
-The reply never repeats the issue's title or body.
-
-## Run it on your machine
+## Run it locally
 
 ```sh
-git clone https://github.com/iacsha/gitforage
-cd gitforage
+git clone https://github.com/iacsha/gitforage && cd gitforage
 bun install
 cp interests.example.yml interests.yml    # then edit it
-export GITHUB_TOKEN=...                   # any token; no scopes needed for public data
+export GITHUB_TOKEN=...                   # any token; no scopes needed
 bun packages/cli/src/cli.ts preview
 ```
 
-A token is strongly recommended. Without one, GitHub allows 60 requests an hour, which is not enough for a full run. `GH_TOKEN` works too. The token is only sent to `api.github.com`, in the `Authorization` header.
+## Docs
 
-## Commands
-
-```
-gitforage preview  [--config interests.yml] [--mode discover|contribute] [--limit N] [--json] [--out preview.md] [--debug]
-gitforage run      [--config interests.yml] [--mode discover|contribute] [--limit N] [--json] [--out digest.md] [--state state/seen.json]
-                   [--feedback feedback.yml] [--debug]
-gitforage site     [--config interests.yml] --out DIR [--repo owner/name] [--state state/seen.json]
-gitforage feedback [--config interests.yml] [--event FILE] [--issues FILE] [--replies DIR] [--feedback feedback.yml] [--json]
-```
-
-- `preview` prints a ranked list: score, repo, stars, source, top reasons and link. It ignores the seen state and does not write it. With `--out` it writes markdown instead.
-- `run` leaves out anything already in `state/seen.json`, prints a markdown digest (or writes it with `--out`), records what it reported in `state/seen.json`, records star counts in `state/stars.json` for rising repos, writes `state/catalog.json` in discover mode when `site.personalize` is on, and keeps the list in `state/digests/<date>-<mode>.json` for the portal.
-- `site` builds the portal from `state/digests/` into `--out`. `--repo` names the portal repo for the Keep and Skip links (the workflow passes its own repo).
-- `feedback` reads issues as JSON: a GitHub `issues` event (`--event`), a list as the REST API returns it (`--issues`), or the `GITFORAGE_ISSUES_JSON` variable. It appends accepted marks to `feedback.yml` and, with `--replies DIR`, writes a reply per handled issue to `DIR/<number>.md`. Issues that do not look like feedback are left alone.
-- Both read `feedback.yml` next to the config (or `--feedback FILE`) when it exists.
-- `--mode` overrides `mode` from the config.
-- `--json` gives every reason with its points, plus the fork, kin and signal details, the detected language (`lang`, `lang_confidence`) and any star-farm evidence.
-- `--debug` lists every dropped repo and why on stderr ("dropped owner/name: written in Chinese (zh), not in filters.spoken_languages").
-- `--no-cache` skips the response cache, `--cache-dir` moves it, `--quiet` silences progress and stats.
-
-Progress and a summary go to stderr: how many candidates each source found, how many were dropped (and how many of those for language or a suspected star farm), how many API requests were made, how many came from the cache, and the time taken.
-
-From the repo root, `bun run gitforage preview ...` is the same as `bun packages/cli/src/cli.ts preview ...`.
-
-## interests.yml
-
-See [`interests.example.yml`](interests.example.yml). You need at least one of `topics`, `keywords`, `seeds` or `stars_from`. Everything else has a default. Unknown keys are errors (with a "did you mean" hint), and every problem is reported at once.
-
-| Key | Default | Meaning |
-|---|---|---|
-| `profile` | `""` | Free text about you. Not used by the rules; kept for the LLM re-rank (coming). |
-| `topics` | `[]` | GitHub topics. Each one is a search for new repos, and matching topics add points. |
-| `keywords` | `[]` | Phrases searched in name, description and README. |
-| `seeds` | `[]` | Projects you follow, as `owner/repo`. Their live forks and kin are foraged. |
-| `stars_from` | none | A GitHub user, normally you. Their stars count as already known (never shown), and they are what kin and affinity learn your profile from. |
-| `exclude.topics` | `[]` | Drop repos with any of these topics. |
-| `exclude.keywords` | `[]` | Drop repos whose `owner/name` or description contains any of these (case-insensitive). |
-| `exclude.owners` | `[]` | Drop repos from these owners. |
-| `exclude.patterns` | `[]` | Keywords and regexes on name, description and topics. See [Exclusion patterns](#exclusion-patterns). |
-| `popularity` | `topic` | `topic` scores stars as a percentile within each of your interests; `global` uses raw counts. See [Popularity within topic](#popularity-within-topic). |
-| `filters.min_stars` | `5` | Minimum stars for search and kin results. Forks are exempt. |
-| `filters.max_age_days` | `365` | "New" means created within this many days. |
-| `filters.languages` | `[]` | Programming languages (GitHub's language field). Empty means any. |
-| `filters.spoken_languages` | `[]` | Languages of the description, as two-letter codes (`en`, `es`, `zh`, ...). Empty means any. See [Spoken languages](#spoken-languages). |
-| `filters.drop_undetected` | `false` | With `spoken_languages` set, also drop repos whose language cannot be told (short or empty descriptions). |
-| `filters.drop_suspected_star_farms` | `false` | Drop repos whose stars look inflated, instead of only lowering their score. See [Star-farm guard](#star-farm-guard). |
-| `mode` | `discover` | `discover` to find useful tools, `contribute` to find projects to contribute to. Picks the weight preset. |
-| `cadence` | `weekly` | `daily`, `weekly` or `monthly`. Stored only: the template workflow runs weekly, and you change its `cron` line to change that. |
-| `digest_size` | `20` | Items per list, unless `--limit` is given. |
-| `llm.provider` | `none` | `none`, `anthropic`, `openai-compatible` or `ollama`. Validated, but the re-rank is not built yet, so it is ignored. |
-| `llm.model` | `""` | Model name for the LLM re-rank (coming). |
-| `weights.*` | per mode | Override any scoring weight. See below. |
-| `limits.*` | see below | API sampling caps. |
-| `cache.ttl_hours` | `12` | How long cached API responses are reused. `0` turns the cache off. |
-| `site.repo` | none | The portal repo, `owner/name`, for Keep and Skip links. The workflow passes it, so you rarely set it. |
-| `site.title` | `gitforage` | The portal's name. |
-| `site.tag` | none | Optional short label beside the name, like `beta`. Lowercase letters, digits, spaces and hyphens, at most 16. |
-| `site.url` | Pages URL | The public address, used in the feed. Defaults to `https://<owner>.github.io/<repo>/`. |
-| `site.analytics` | off | `{ provider: goatcounter, code: <your code> }` for cookieless visit counts. |
-| `site.layout.density` | `comfortable` | The default card layout: `comfortable`, `compact` (smaller text, more tiles) or `list` (one row per repo). See [Layout](#layout). |
-| `site.layout.sort` | `score` | The default order: `score`, `newest`, `stars` or `rising`. |
-| `site.layout.fields` | all `true` | Which card fields show by default: `{ reasons, health, language, stars }`, each `true` or `false`. |
-| `site.personalize.enabled` | `false` | The Discover page's "Pick your topics" panel. See [Pick your topics](#pick-your-topics). |
-| `site.personalize.catalog.groups` | `[]` | The picker's groups: `{ name, topics }`, at most 24. Names are plain text up to 60 characters. |
-| `site.personalize.catalog.topics` | `[]` | More catalog topics, shown under "More topics" with your own `topics`. At most 150 catalog topics in all. |
-| `site.personalize.catalog.per_topic` | `25` | Candidates kept per topic in `catalog.json` (1 to 100), lowered automatically to fit the size budget. |
-| `site.personalize.packs` | `[]` | Starter packs: `{ id, name, topics }`, at most 24, topics from the catalog. |
-| `feedback.visitors` | `true` | Accept Keep and Skip from people who are not owners or collaborators. |
-| `feedback.visitor_weight` | `0.25` | How much a visitor mark counts next to an owner mark (0 to 1). |
-| `feedback.max_per_user` | `3` | Most marks one person can add a day. Owners are not limited. |
-| `feedback.min_account_age_days` | `30` | Visitor accounts younger than this are ignored. |
-| `revival.enabled` | `false` | The Revival radar: in your topics, upstreams that are archived or have not been pushed for `dormancy_months`, carried on by a fork that is ahead of upstream, pushed in the last 180 days and has some traction. Shown on `revival.html` (the Revivals tab). Needs `topics`. |
-| `revival.dormancy_months` | `12` | No push for this many months (3 to 120), or archived, counts as dormant. |
-| `revival.max_candidates` | `10` | Upstreams examined afresh per run (1 to 50). Each costs at most 5 API calls; a check is reused from `state/revival.json` for 28 days. |
-| `revival.min_fork_stars` | `5` | Stars a fork needs to count as carrying the project (3 open issues of its own also count). |
-
-Archived and disabled repos are always dropped, as are your seeds and the repos `stars_from` has starred.
-
-### limits
-
-| Key | Default | Meaning |
-|---|---|---|
-| `search_per_query` | 30 | Results per search request (max 100). |
-| `forks_per_seed` | 30 | Forks listed per seed, newest first and most-starred. |
-| `fork_compares_per_seed` | 8 | Forks per seed compared against upstream. |
-| `fork_max_push_age_days` | 180 | Forks not pushed within this many days are skipped before comparing. |
-| `kin_terms` | 30 | Profile terms whose GitHub-wide count is looked up (one search each, cached 30 days). |
-| `kin_queries` | 12 | Kin searches, one per pair of profile terms that occur together on your stars. |
-| `kin_min_overlap` | 2 | A kin repo must carry this many of your profile terms. |
-| `kin_max_stars` | 20000 | Kin repos above this many stars are skipped, since everyone already knows them. `0` means no cap. |
-| `kin_max_push_age_days` | 180 | Kin searches only look at repos pushed within this many days. |
-| `rising_per_query` | 30 | Results per rising search (one per topic and keyword). `0` turns the rising source off. |
-| `rising_min_stars` | 50 | Rising repos need at least this many stars. |
-| `rising_min_growth` | 10 | Rising repos must gain this many stars a month, and at least 1% of their stars. |
-| `rising_push_days` | 30 | Rising repos must have been pushed within this many days. |
-| `stars_from_max_pages` | 3 | Pages of 100 read from `stars_from`. |
-| `signals_top` | 15 | Activity signals are fetched for this many top candidates only. |
-
-## Sources
-
-| Source | How | Cost |
-|---|---|---|
-| New | One search per topic and keyword: `created:>=<max_age_days ago> stars:>=<min_stars>`, sorted by stars. | 1 search request each |
-| Rising | One search per topic and keyword for older repos: `created:<<max_age_days ago> pushed:>=<rising_push_days ago> stars:>=<rising_min_stars>`. Kept when their measured growth qualifies (see below). | 1 search request each |
-| Live forks | List forks (newest and most-starred), drop forks never pushed since forking or quiet for `fork_max_push_age_days`, then compare the freshest against upstream for `ahead_by`. | 1 request for the seed, 2 for the lists, 1 per compare |
-| Kin of stars | Learn a term profile from your stars and seeds, then search pairs of terms that occur together on your stars. | 1 search per term (cached 30 days), 1 per seed README, 1 search per pair |
-| Signals | For the top `signals_top` candidates only, and only the signals the current mode gives weight to. Plus a contributors list for repos with 2,000+ stars, for the star-farm guard. | 0 to 7 per candidate |
-
-### Kin of your stars
-
-gitforage learns what you care about from your own stars (`stars_from`) and your seeds. Every repo becomes a set of terms: its topics and the words of its name and description. Seed READMEs are read too, but README words only strengthen a term that topics or descriptions already show, since READMEs are full of words like "started" and "license". A term needs at least two of your repos behind it.
-
-Each term is then weighted by how characteristic it is of you, TF-IDF style:
-
-- `p` is the share of your profile repos that carry it (seeds count double).
-- `g` is the share of GitHub that matches it: one search for the term, divided by an estimate of 300 million repos. These counts change slowly, so they are cached for 30 days.
-- `lift = p / g`, and the weight is `p * log10(lift)`, scaled so your strongest term is 1.
-
-So `docker` on many of your stars weighs little, because millions of repos carry it, while `hl7` on a handful weighs a lot. Kin searches pair up the strongest terms that occur together on your stars (`"hl7" "mllp"`, each term in at most three pairs) and keep results that carry at least `kin_min_overlap` of your terms.
-
-Every candidate, from any source, also gets an **affinity**: the sum of the weights of your profile terms it carries. That is the lift-based score: a repo scores for being unusual in the way your stars are unusual, not for being popular. A repo that went viral this week but shares nothing with your stars gets no affinity and is never kin.
-
-Why not "people who starred your seeds also starred": GitHub no longer shows the stargazer lists of other people's repos (REST returns 404, GraphQL an empty list). Milestone 1 sampled seed contributors and fork owners instead. On a real config that cost about 130 of 220 requests and found 4 kin, 2 of them viral repos unrelated to the config. The term-based kin, on the same config, found over 200 candidates for 12 searches (plus 30 term counts, cached for a month). Its top results were all on-topic, it found the better of the two on-topic people-sampled hits (a 2,400-star FHIR library) and missed the other (an 11-star repo with no topics), and neither viral repo appeared anywhere in the 200 best. So the people-sampling fallback was removed.
-
-### Rising older repos
-
-"Stars divided by age" means nothing for a five-year-old repo, and GitHub has no cheap "stars gained this month" for repos you do not own (their stargazer timestamps are hidden too). So gitforage measures growth itself: `run` records the star count of every candidate it looks at in `state/stars.json`, and on a later run growth is `(stars now - stars then) / days between`, scaled to a month. A baseline is kept for at least 6 days, so two runs on the same day do not erase it, and entries not seen for 180 days are dropped. A repo is rising when it gains at least `rising_min_growth` stars a month and at least 1% of its stars a month. The first run only records counts and finds no rising repos; from the second weekly run on, the source works. Any older candidate with a baseline also gets the `star_growth` rule.
-
-### Popularity within topic
-
-Raw star counts favour whatever is big everywhere. With `popularity: topic` (the default), a candidate's popularity is its percentile among this run's candidates that share one of your topics or keywords with it (or, failing that, its strongest profile term). Young repos are compared on stars a month and older ones on total stars, each only with their own kind. The best percentile across its groups counts. So a 50-star HL7 repo at the top of the hl7 pool earns the same popularity points as a 5,000-star repo at the top of a generic pool, and fit decides between them. The reason says where it stands: "50 stars, top 25% in hl7".
-
-### Exclusion patterns
-
-`exclude.patterns` takes plain keywords and regexes, matched against the name (`owner/repo`), the description and each topic. A plain string is a case-insensitive keyword in all three. A mapping takes exactly one of `keyword:` or `regex:`, and an optional `in: [name, description, topics]`. Regexes are case-insensitive. Because they run against text from strangers' repos, regexes longer than 200 characters, with backreferences or lookarounds, or with nested quantifiers such as `(a+)+` are refused when the config is loaded. See the commented example in [`interests.example.yml`](interests.example.yml), which shows how to drop crypto giveaway and game-cheat spam. Nothing is excluded by default beyond what you list.
-
-### Spoken languages
-
-gitforage guesses the human language of each candidate from its description, with no dependency and no extra API calls:
-
-1. **Script.** It counts the letters of each Unicode script: Han, kana, Hangul, Cyrillic, Arabic, Hebrew, Devanagari, Thai, Greek and others. Han, kana and Hangul count three times, since one character is about a word. Capitalised acronyms (FHIR, MCP) are left out, because they are the same in every language. If a non-Latin script has the most weight, it names the language (kana on top of Han means Japanese).
-2. **Latin script.** A small stopword vote decides between English and Spanish, Portuguese, French, German, Italian, Dutch, Turkish, Indonesian and Vietnamese, helped by letters only some of them use (ñ, ã, ß, ğ, ơ). Words in capitals do not vote, so "Proxmox VE" is not Turkish and "MIT licensed" is not German.
-
-The result is a code and a confidence, such as `{ lang: "zh", confidence: 0.63 }`. Text that is too short, or where English ties with another language, is `und` (undetermined). So one Chinese word in an English sentence stays English, and a Chinese description with one English sentence after it is Chinese. Topics are not used: they are ASCII slugs such as `proxmox-ve` or `bluetooth-le` that read as Turkish or French once split.
-
-With `filters.spoken_languages: [en]`, repos in other languages are dropped with a reason ("written in Chinese (zh), not in filters.spoken_languages"). Undetermined repos stay unless `filters.drop_undetected: true`, because many English descriptions are short fragments ("Self-hosted photo management") with no function words to vote.
-
-### Star-farm guard
-
-Bought or botted stars come without what real users bring: forks, issues and contributors. They also come fast. gitforage checks every candidate against what it already has (the repo's stars, forks, open issues, size and age, and growth since an earlier run) and, for the top `signals_top` repos with 2,000 stars or more, one contributors request.
-
-| Check | Strength |
+| Doc | What's in it |
 |---|---|
-| 150,000 stars or more within its first year (only a few dozen repos in GitHub's history have that many at all) | strong |
-| 150 or more stars per fork, with at least 1,000 stars | strong |
-| At most one contributor, with at least 10,000 stars | strong |
-| Under a year old and 25,000 stars a month (50,000+ stars), or under 90 days old and 2,500 a month (5,000+ stars) | weak |
-| 40 or more stars per fork | weak |
-| At most two open issues and pull requests, with at least 5,000 stars | weak |
-| At most two contributors, with at least 2,000 stars | weak |
-| Under 200 KB of code, with at least 5,000 stars | weak |
-| A sudden spike: 3,000+ stars a month since the last run, five times the lifetime average | weak |
+| [Configuration](docs/configuration.md) | Every `interests.yml` key and its default |
+| [The portal](docs/portal.md) | Pages, layout, Pick your topics, Keep and Skip |
+| [Sources and scoring](docs/sources-and-scoring.md) | Where finds come from, filters, the star-farm guard, how points add up |
+| [Command line](docs/cli.md) | Commands, state and feedback files |
+| [Security design](docs/security-design.md) | How untrusted input is handled; report issues via [SECURITY.md](SECURITY.md) |
+| [Development](docs/development.md) | Tests, layout, dependencies, releasing |
+| [Architecture](ARCHITECTURE.md) | How the pieces fit |
 
-One strong check, or two weak ones, flags the repo. When the repo has plenty of forks (under 10 stars per fork), weak checks need a third to agree, since forks are real use. Forks found as live forks are never checked.
+## Security in brief
 
-A flagged repo loses `star_farm` points (-8) with the evidence as its reason, such as "stars look inflated: 470k stars in 7 months" or "stars look inflated: 5.2k stars, 9 forks, 1 open issue". With `filters.drop_suspected_star_farms: true` it is dropped instead, with the same reason in `--debug`. The demo portal drops them.
-
-### Rate limits and caching
-
-- Every response's `x-ratelimit-*` headers are tracked per resource (core and search). When a bucket is empty, gitforage waits for its reset instead of collecting 403s.
-- Search requests are spaced to 30 a minute (10 without a token).
-- On 403 or 429 it honours `retry-after`, then the reset time, and falls back to exponential backoff from 60 seconds for secondary limits. Server errors get a short backoff. A wait longer than 15 minutes stops the run with a clear message.
-- Responses are cached under `.gitforage/cache` next to the config, for `cache.ttl_hours`. A rerun inside the TTL makes no requests.
-
-A cold run of a real config (7 topics, 2 keywords, 5 seeds, `stars_from` with 61 stars) made 139 requests in 121 seconds in discover mode, about a minute of it waiting on the search limit, since most requests are searches. Contribute mode straight after made 62 more in 19 seconds. Milestone 1 needed 220 requests for discover on a similar config, most of them for people-sampling kin. A rerun from the cache takes about 2 seconds, and the term counts behind the profile stay cached for 30 days.
-
-## How scoring works
-
-Each rule adds points and a reason. The score is the sum. A weight of 0 turns a rule off, and signals that only feed zero-weight rules are not fetched at all. Set any weight under `weights:` to override the mode's preset.
-
-| Rule | discover | contribute | Points |
-|---|--:|--:|---|
-| `topic_match` | 3 | 3 | per interest topic the repo carries or was found by, up to 3 |
-| `keyword_match` | 2 | 2 | per keyword in name or description, or found by keyword search, up to 3 |
-| `star_velocity` | 3 | 2 | times log10(1 + stars per month), capped at 2.5, for repos younger than `max_age_days` |
-| `stars` | 1.5 | 1 | times log10(1 + stars), capped at 4, for older repos |
-| `star_growth` | 2 | 1.5 | times log10(1 + stars gained a month), capped at 2.5, for older repos with an earlier observation |
-| `recent_push` | 3 | 3 | full within 7 days, 2/3 within 30, 1/3 within 90 |
-| `stale_push` | -3 | -3 | no push for over a year |
-| `release` | 2 | 1 | latest release within 90 days; half within a year |
-| `license` | 1 | 1 | a license is detected |
-| `readme` | 1.5 | 1 | a third each for a README file, a description, and a homepage |
-| `affinity` | 2 | 1.5 | times the summed weight of your profile terms it carries (top 5), capped at 3 |
-| `star_farm` | -8 | -8 | the stars look inflated (see [Star-farm guard](#star-farm-guard)) |
-| `feedback` | 1 | 1 | times (2 x topic nudge + owner nudge + language nudge) from your Keep/Skip marks |
-| `fork_ahead` | 1 | 2 | times log2(1 + commits ahead of upstream), capped at 5 |
-| `outside_prs` | 0 | 1 | per PR merged from outside contributors in the last 90 days, up to 5 |
-| `issue_response` | 0 | 3 | times the share of recent issues (over 2 days old) that got a reply or were closed |
-| `contributing` | 0 | 1 | a CONTRIBUTING file |
-| `good_first_issue` | 0 | 1.5 | open issues labelled "good first issue" or "help wanted" |
-
-Star velocity is stars divided by age, which is cheap and only meaningful for young repos. With `popularity: topic` (the default), `star_velocity` and `stars` use the percentile within topic instead of the log: the weight times the cap times the percentile. Popularity is capped either way so it cannot outweigh fit.
-
-"Outside" contributors are those GitHub marks as `CONTRIBUTOR`, `FIRST_TIME_CONTRIBUTOR`, `FIRST_TIMER` or `NONE`, not counting bots.
-
-Ties are broken by stars, then by name, so output is deterministic for the same data.
-
-## State and feedback
-
-`gitforage run` keeps `state/seen.json` next to the config (or at `--state`). It maps each reported `owner/repo` to the date it was first shown and its score then. Beside it, `state/stars.json` holds the star counts used for growth, `state/catalog.json` the personalization catalog (when on), and `state/digests/` holds each run's list. Keys are sorted so the files diff cleanly in git. `preview` never writes them; it reads `stars.json` so growth shows up. A second `run` on the same day and mode adds to that day's digest instead of replacing it. Running discover and then contribute with the same state, as the template does, lists each repo once, in the first mode that ranks it.
-
-`feedback.yml` holds your Keep and Skip marks:
-
-```yaml
-version: 1
-marks:
-  - { repo: owner/name, mark: keep, date: 2026-11-29, topics: [hl7, fhir], language: Java }
-  - { repo: other/name, mark: skip, date: 2026-11-29, topics: [spamlist], language: Kotlin }
-```
-
-Marks that come in through the portal also carry `from: visitor` or `from: owner`, and `by: <login>`. A mark without `from` is yours. Your latest mark per repo counts, and a repo you skipped is never shown again. Each visitor's latest mark per repo counts `feedback.visitor_weight` of one of yours, and a visitor's Skip only nudges. Marks add up per topic, per owner and per language into a nudge between -1 and 1 (`tanh(net / 2)`: one mark moves things a little, three most of the way), and the `feedback` rule adds `weight x (2 x topic nudge + owner nudge + language nudge)`, where the topic nudge is the mean over the repo's topics that have one. Topics and language are stored with the mark, because they are what the nudges are keyed on. You can add marks by hand too.
-
-## Security
-
-gitforage handles two kinds of untrusted input: text from strangers' repos, and Keep/Skip issues from anyone on GitHub.
-
-**On the portal**, every page carries a strict Content-Security-Policy (`default-src 'none'; style-src 'self'; script-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'`, plus GoatCounter's origins only if you turn analytics on). With personalization on, the Discover page alone adds `connect-src 'self' https://api.github.com`: `'self'` to read `catalog.json`, and GitHub's API for a visitor's own stars lookup. The personalize scripts build every node with `createElement` and `textContent`, set attributes only from an allow-list, link only to GitHub URLs rebuilt from validated names, and validate `catalog.json`, the URL, `localStorage` and GitHub's responses (shape, size and item count) before using them; a test scans every portal script for `innerHTML`, `outerHTML`, `insertAdjacentHTML`, `document.write`, `eval(` and `Function(`. There is no inline script, no inline style and no style attribute. The theme script that runs before paint is a separate same-origin file, not an inline snippet, so the policy needs no `unsafe-inline`. The scripts only read and write five fixed `localStorage` keys (theme, language, density, fields and sort) inside `try`, accept only known values from them, and never write markup. Every `data-*` attribute on a card comes from a fixed list (`data-lang` from the language codes, `data-sources` from the four sources), a strict topic pattern, or a number formatted by the build (score, stars, created date, momentum, rank), and a test fails on any `data-*` name outside the allow-list. Every dynamic string goes through one HTML escaper, applied automatically by the page templates, and every link is checked to be a GitHub link rebuilt from a validated name or a relative link inside the site. Digest files are validated again when the site is built, as if a stranger had written them. The tests render descriptions full of `<img onerror>`, `javascript:`, quote-breaking attributes and bidi characters and check that the output is inert. The Atom feed has its own XML escaper.
-
-**In the workflows**, every action is pinned by a full commit SHA, and gitforage itself by a full commit SHA. Each job gets only the permissions it needs: the forage job can write repo contents, the deploy job can publish Pages, the feedback job can write contents and issues. There is no `pull_request_target`, checkouts do not keep credentials, and no `${{ }}` expression is placed inside a `run:` script: issue data reaches gitforage only as JSON files, and only fixed values go through `env:`. Tests check these rules on every workflow.
-
-**Feedback issues** are matched against a strict title pattern, and nothing else in them is read or echoed. Bots, young accounts and repos the portal never listed are refused, visitors are rate-limited and weigh less than owners, and a visitor cannot hide a repo.
-
-**Everywhere else,** all text from the GitHub API is treated as untrusted. Repo names must be plain `owner/repo`; anything else is dropped. Control and bidi characters are stripped, markdown and HTML are escaped, and the only links emitted are `https://github.com/<owner>/<repo>` rebuilt from a validated name. Profile terms are reduced to `[a-z0-9+#-]` tokens before they go into a search query. Exclusion regexes with shapes that can backtrack badly are refused. `feedback.yml`, `state/seen.json` and `state/stars.json` are validated entry by entry. Cache files are named by a hash of the request URL. The token is redacted from errors and logs. See [SECURITY.md](SECURITY.md) to report a problem.
-
-## Dependencies
-
-| Package | Kind | Why |
-|---|---|---|
-| [`yaml`](https://www.npmjs.com/package/yaml) 2.9.1 | runtime | Parses `interests.yml` with line and column errors, a safe core schema and alias limits. No dependencies of its own. |
-| [`typescript`](https://www.npmjs.com/package/typescript) 7.0.2 | dev | `bun run typecheck`. |
-| [`@types/bun`](https://www.npmjs.com/package/@types/bun) 1.4.5 | dev | Types for bun's APIs. |
-
-GitHub is reached with plain `fetch`. Versions are pinned exactly, and `bun.lock` is committed.
-
-## Development
-
-```sh
-bun install
-bun test             # no network: tests use fake API responses
-bun run typecheck
-```
-
-Layout:
-
-```
-packages/core    sources, scoring, state, sanitising, the GitHub client
-packages/cli     the gitforage command
-packages/site    static portal and Atom feed
-packages/notify  notifiers (coming)
-template/        what a portal repo starts from: interests.yml, feedback.yml, workflows
-demo/            the public demo portal's interests
-scripts/         release helpers (pin-template.ts)
-```
-
-## Releasing
-
-The template ships with an all-zero `GITFORAGE_SHA`. On the commit being released, run `bun scripts/pin-template.ts <commit SHA>` to pin both template workflows to it.
+Strict Content-Security-Policy with no inline script, one escaper for all text, links only to GitHub URLs rebuilt from validated names, every action and gitforage itself pinned by commit SHA, and Keep/Skip issues read by title only. See [docs/security-design.md](docs/security-design.md).
 
 ## License
 
