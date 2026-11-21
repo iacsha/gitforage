@@ -92,10 +92,12 @@ describe("template and demo files", () => {
     for (const f of ["template/interests.yml", "demo/interests.yml"]) expect(() => parseConfig(readFileSync(join(root, f), "utf8"), f)).not.toThrow();
   });
 
-  test("the demo has exactly the five agreed topic groups and no stars_from", () => {
+  test("the public guide has a broad, general-audience default view and no stars_from", () => {
     const c = parseConfig(readFileSync(join(root, "demo", "interests.yml"), "utf8"));
-    expect(c.topics).toEqual(["hl7", "fhir", "mirth", "dicom", "proxmox", "self-hosted", "docker", "home-assistant", "zigbee", "matter",
-      "cli", "terminal", "devtools", "claude-code", "mcp", "ai-agents"]);
+    expect(c.topics).toEqual(["llm", "ai-agents", "mcp", "react", "svelte", "cli", "devtools", "terminal", "database", "postgresql",
+      "machine-learning", "security", "privacy", "rust", "golang", "android", "flutter", "gamedev", "godot", "self-hosted", "homelab",
+      "docker", "home-assistant", "fhir", "hl7"]);
+    expect(c.topics.some((t) => /iptv|m3u|xmltv/.test(t))).toBe(false);
     expect(c.stars_from).toBeNull();
     expect(c.site.analytics).toEqual({ provider: "goatcounter", code: "gitforage" });
     expect(c.site.title).toBe("gitforage");

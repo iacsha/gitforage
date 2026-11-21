@@ -14,8 +14,8 @@ describe("the demo portal's catalog", () => {
     expect(p.packs.length).toBeGreaterThanOrEqual(8);
     expect(p.packs.length).toBeLessThanOrEqual(12);
     expect(p.groups.map((g) => g.name)).not.toContain("More topics");
-    expect(demo.topics).toEqual(["hl7", "fhir", "mirth", "dicom", "proxmox", "self-hosted", "docker", "home-assistant", "zigbee", "matter",
-      "cli", "terminal", "devtools", "claude-code", "mcp", "ai-agents"]);
+    expect(demo.topics.length).toBeGreaterThanOrEqual(20);
+    expect(demo.topics.slice(0, 2)).toEqual(["llm", "ai-agents"]);
     for (const t of demo.topics) expect(p.topics).toContain(t);
     expect(demo.filters.spoken_languages).toEqual(["en"]);
     expect(demo.filters.drop_suspected_star_farms).toBe(true);
