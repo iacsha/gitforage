@@ -21,12 +21,14 @@ gitforage run      [--config interests.yml] [--mode discover|contribute] [--limi
                    [--feedback feedback.yml] [--debug]
 gitforage site     [--config interests.yml] --out DIR [--repo owner/name] [--state state/seen.json]
 gitforage feedback [--config interests.yml] [--event FILE] [--issues FILE] [--replies DIR] [--feedback feedback.yml] [--json]
+gitforage early-finds [--config interests.yml] [--state state/seen.json]
 ```
 
 - `preview` prints a ranked list: score, repo, stars, source, top reasons and link. It ignores the seen state and does not write it. With `--out` it writes markdown instead.
 - `run` leaves out anything already in `state/seen.json`, prints a markdown digest (or writes it with `--out`), records what it reported in `state/seen.json`, records star counts in `state/stars.json` for rising repos, writes `state/catalog.json` in discover mode when `site.personalize` is on, and keeps the list in `state/digests/<date>-<mode>.json` for the portal.
 - `site` builds the portal from `state/digests/` into `--out`. `--repo` names the portal repo for the Keep and Skip links (the workflow passes its own repo).
 - `feedback` reads issues as JSON: a GitHub `issues` event (`--event`), a list as the REST API returns it (`--issues`), or the `GITFORAGE_ISSUES_JSON` variable. It appends accepted marks to `feedback.yml` and, with `--replies DIR`, writes a reply per handled issue to `DIR/<number>.md`. Issues that do not look like feedback are left alone.
+- `early-finds` (with `early_finds.enabled`) updates `state/early-finds.json` beside the seen state: it adds every repo in `state/seen.json` not tracked yet, checks GitHub Trending and the Hacker News front page, and looks up stars for up to 400 repos not checked in six days. With `early_finds.enabled` off, or no seen state yet, it says so and writes nothing. If Trending or HN cannot be read it warns and still checks stars. The `early-finds` workflow runs it daily. See [Found early](portal.md#found-early).
 - Both read `feedback.yml` next to the config (or `--feedback FILE`) when it exists.
 - `--mode` overrides `mode` from the config.
 - `--json` gives every reason with its points, plus the fork, kin and signal details, the detected language (`lang`, `lang_confidence`) and any star-farm evidence.
@@ -39,7 +41,7 @@ From the repo root, `bun run gitforage preview ...` is the same as `bun packages
 
 # State and feedback
 
-`gitforage run` keeps `state/seen.json` next to the config (or at `--state`). It maps each reported `owner/repo` to the date it was first shown and its score then. Beside it, `state/stars.json` holds the star counts used for growth, `state/catalog.json` the personalization catalog (when on), and `state/digests/` holds each run's list. Keys are sorted so the files diff cleanly in git. `preview` never writes them; it reads `stars.json` so growth shows up. A second `run` on the same day and mode adds to that day's digest instead of replacing it. Running discover and then contribute with the same state, as the template does, lists each repo once, in the first mode that ranks it.
+`gitforage run` keeps `state/seen.json` next to the config (or at `--state`). It maps each reported `owner/repo` to the date it was first shown and its score then. Beside it, `state/stars.json` holds the star counts used for growth, `state/catalog.json` the personalization catalog (when on), `state/early-finds.json` the early-finds ledger (when on), and `state/digests/` holds each run's list. Keys are sorted so the files diff cleanly in git. `preview` never writes them; it reads `stars.json` so growth shows up. A second `run` on the same day and mode adds to that day's digest instead of replacing it. Running discover and then contribute with the same state, as the template does, lists each repo once, in the first mode that ranks it.
 
 `feedback.yml` holds your Keep and Skip marks:
 

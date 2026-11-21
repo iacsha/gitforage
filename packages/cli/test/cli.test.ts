@@ -208,4 +208,35 @@ describe("cli preview and run", () => {
     expect(first).toBeGreaterThan(0);
     expect(calls.length).toBe(first);
   });
+
+  test("early-finds: a no-op when off or with no seen state; otherwise it writes the ledger, and site builds the page", async () => {
+    expect(await main(["early-finds", "--config", cfgPath()], { GITHUB_TOKEN: "t" })).toBe(0);
+    expect(err.join("\n")).toContain("early_finds.enabled is false");
+    writeFileSync(cfgPath(), "topics: [hl7]\nearly_finds:\n  enabled: true\n");
+    expect(await main(["early-finds", "--config", cfgPath()], { GITHUB_TOKEN: "t" })).toBe(0);
+    expect(err.join("\n")).toContain("nothing to track");
+    expect(existsSync(join(dir, "state", "early-finds.json"))).toBe(false);
+    expect(calls).toEqual([]);
+
+    await main(["run", "--config", cfgPath(), "--quiet", "--out", join(dir, "d.md")], { GITHUB_TOKEN: "t" });
+    const base = fakeFetch(calls);
+    const web: string[] = [];
+    globalThis.fetch = (async (input: string | URL | Request) => {
+      const u = new URL(String(input));
+      if (u.hostname === "github.com") { web.push(u.pathname); return new Response(`<h2 class="h3 lh-condensed"><a href="/a/one">a</a></h2>`); }
+      if (u.hostname === "hn.algolia.com") { web.push(u.pathname); return new Response(JSON.stringify({ hits: [] })); }
+      if (/^\/repos\/[a-z]\/[a-z]+$/.test(u.pathname)) return new Response(JSON.stringify(repo(u.pathname.slice(7), 50)));
+      return base(input);
+    }) as typeof fetch;
+    expect(await main(["early-finds", "--config", cfgPath(), "--no-cache"], { GITHUB_TOKEN: "t" })).toBe(0);
+    expect(web).toEqual(["/trending", "/api/v1/search"]);
+    const ledger = JSON.parse(readFileSync(join(dir, "state", "early-finds.json"), "utf8"));
+    expect(Object.keys(ledger.repos)).toEqual(["a/one", "b/two"]);
+    expect(ledger.repos["a/one"].stars_at_first_seen).toBe(50);
+    expect(ledger.repos["a/one"].trending_first).toBe(new Date().toISOString().slice(0, 10));
+
+    expect(await main(["site", "--config", cfgPath(), "--quiet", "--out", join(dir, "site")], {})).toBe(0);
+    const page = readFileSync(join(dir, "site", "early-finds", "index.html"), "utf8");
+    expect(page).toContain("nothing has reached Trending yet");
+  });
 });

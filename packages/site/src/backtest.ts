@@ -113,6 +113,6 @@ ${finds}
 <li><strong>The first replayed week is left out</strong>, because it lists everything already big when the replay began.</li>
 </ul>
 <h2>The live record</h2>
-<p>From <time datetime="${b.liveLedgerStart}">${day(b.liveLedgerStart)}</time> the public demo keeps a live early-finds record of what it actually shows, kept apart from this simulation. The method, the coverage checks and every simulated result are published with the backtest.</p>`;
+<p>From <time datetime="${b.liveLedgerStart}">${day(b.liveLedgerStart)}</time> the public demo keeps a live early-finds record of what it actually shows, kept apart from this simulation. The method, the coverage checks and every simulated result are published with the backtest.${ctx.earlyFinds ? html` It is on the <a href="${href("early-finds/index.html")}">Found early</a> page.` : ""}</p>`;
   return page(ctx, { title: "Backtest (simulated)", description: "A simulated replay of gitforage's rules on 26 past weeks: how often its finds later reached GitHub Trending, and how often they did not.", root: "", path: "backtest.html", nav: null, body });
 }

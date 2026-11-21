@@ -29,7 +29,8 @@ packages/core     interests.yml schema, GitHub client (cache, rate limits),
                   sanitising of untrusted text
                   run digests, feedback intake from Keep/Skip issues
                   the revival radar (dormant upstream, live fork)
-packages/cli      gitforage preview | run | site | feedback
+                  the early-finds ledger (Trending, HN, star milestones)
+packages/cli      gitforage preview | run | site | feedback | early-finds
 packages/site     static portal (density, sort and filters, the topic picker
                   and catalog.json) and Atom feed
 packages/notify   ntfy, Telegram, webhooks, email (coming)
@@ -46,7 +47,7 @@ TypeScript, run with bun. Dependencies are kept minimal and pinned exactly.
 2. Edit `interests.yml`.
 3. Turn on Pages with GitHub Actions as the source.
 
-A scheduled workflow (weekly) forages in both modes, commits `state/` (seen repos, star counts and each run's digest), builds the portal and deploys it to Pages. The portal has Discover and Get involved tabs, topic pages, an archive, an About page, a Backtest (simulated) page and an Atom feed. The Haul (`haul/`) is a numbered weekly issue of the week's three best new finds, derived from `state/digests/` on every build (no state of its own), with its own Atom feed for RSS-to-email and optional one-line notes from `haul.txt`. Every page carries Open Graph and Twitter card tags; the image and page URL are added when `site.url` is set. Keep/Skip buttons on each card open a prefilled issue that a second workflow folds into `feedback.yml`, so feedback lives in git and no server is needed. With `site.personalize`, discover runs also forage a bigger topic catalog into `state/catalog.json`, and the Discover page lets each visitor re-rank it for their own topics in their browser.
+A scheduled workflow (weekly) forages in both modes, commits `state/` (seen repos, star counts and each run's digest), builds the portal and deploys it to Pages. The portal has Discover and Get involved tabs, topic pages, an archive, an About page, a Backtest (simulated) page, a Found early page (`early-finds/`, the live record kept apart from the backtest: finds the portal showed before they reached GitHub Trending, the Hacker News front page or a star milestone, from `state/early-finds.json`, which a daily `early-finds` workflow keeps when `early_finds.enabled` is on) and an Atom feed. The Haul (`haul/`) is a numbered weekly issue of the week's three best new finds, derived from `state/digests/` on every build (no state of its own), with its own Atom feed for RSS-to-email and optional one-line notes from `haul.txt`. Every page carries Open Graph and Twitter card tags; the image and page URL are added when `site.url` is set. Keep/Skip buttons on each card open a prefilled issue that a second workflow folds into `feedback.yml`, so feedback lives in git and no server is needed. With `site.personalize`, discover runs also forage a bigger topic catalog into `state/catalog.json`, and the Discover page lets each visitor re-rank it for their own topics in their browser.
 
 Both workflows run gitforage from a pinned commit SHA, installed from its lockfile.
 

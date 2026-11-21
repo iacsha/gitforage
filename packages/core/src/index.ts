@@ -23,3 +23,4 @@ export * from "./digest.ts";
 export * from "./intake.ts";
 export * from "./catalog.ts";
 export * from "./revival.ts";
+export * from "./earlyfinds.ts";

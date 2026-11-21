@@ -5,3 +5,4 @@ export * from "./build.ts";
 export * from "./backtest.ts";
 export * from "./haul.ts";
 export * from "./personalize.ts";
+export * from "./earlyfinds.ts";

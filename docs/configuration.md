@@ -49,6 +49,7 @@ See [`interests.example.yml`](../interests.example.yml). You need at least one o
 | `revival.dormancy_months` | `12` | No push for this many months (3 to 120), or archived, counts as dormant. |
 | `revival.max_candidates` | `10` | Upstreams examined afresh per run (1 to 50). Each costs at most 5 API calls; a check is reused from `state/revival.json` for 28 days. |
 | `revival.min_fork_stars` | `5` | Stars a fork needs to count as carrying the project (3 open issues of its own also count). |
+| `early_finds.enabled` | `false` | Keep `state/early-finds.json` (daily, with the `early-finds` workflow) and build the Found early page from it: finds this portal showed before they reached GitHub Trending, the Hacker News front page or a star milestone. See [Found early](portal.md#found-early). |
 
 Archived and disabled repos are always dropped, as are your seeds and the repos `stars_from` has starred.
 

@@ -3,10 +3,11 @@
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve, sep } from "node:path";
-import { isSafeFullName, toRevivalItem, type CatalogState, type Config, type Digest, type RevivalItem } from "@gitforage/core";
+import { isSafeFullName, toRevivalItem, type CatalogState, type Config, type Digest, type EarlyFindsLedger, type RevivalItem } from "@gitforage/core";
 import { catalogFile } from "./personalize.ts";
 import { atomFeed } from "./feed.ts";
 import { backtestPage } from "./backtest.ts";
+import { earlyFindsForBuild, earlyFindsPage, EARLY_FINDS_PATH } from "./earlyfinds.ts";
 import { haulFiles } from "./haul.ts";
 import { aboutPage, archivePage, digestPage, modePage, pagesUrl, revivalPage, topicPage, topicPageTopics, topicsIndexPage, type SiteContext, type TopicCatalog } from "./render.ts";
 
@@ -22,6 +23,8 @@ const assetDir = join(import.meta.dir, "..", "assets");
 export interface BuildOptions {
   /** owner/name of the portal repo; overrides site.repo. */
   repo?: string | null;
+  /** state/early-finds.json, for the Found early page (built only with at least one repo). Validated again here. */
+  earlyFinds?: EarlyFindsLedger | null;
   /** Build time (ISO). Defaults to now. */
   now?: string;
   /** state/catalog.json, for site.personalize. Validated again here. */
@@ -44,7 +47,8 @@ export function siteContext(cfg: Config, o: BuildOptions = {}): SiteContext {
 }
 
 export function renderSite(cfg: Config, digests: Digest[], o: BuildOptions = {}): Map<string, string> {
-  const ctx = siteContext(cfg, o);
+  const early = earlyFindsForBuild(o.earlyFinds);
+  const ctx: SiteContext = { ...siteContext(cfg, o), earlyFinds: early !== null };
   const files = new Map<string, string>();
   const latest = (mode: Digest["mode"]) => digests.find((d) => d.mode === mode) ?? null;
   files.set("index.html", modePage(ctx, "discover", latest("discover")));
@@ -55,6 +59,7 @@ export function renderSite(cfg: Config, digests: Digest[], o: BuildOptions = {})
   }
   files.set("about.html", aboutPage(ctx));
   files.set("backtest.html", backtestPage(ctx));
+  if (early) files.set(EARLY_FINDS_PATH, earlyFindsPage(ctx, early));
   files.set("archive/index.html", archivePage(ctx, digests));
   for (const d of digests) files.set(`archive/${d.date}-${d.mode}.html`, digestPage(ctx, d));
   // catalog.json, made once: the Topics pages group and count by it too.

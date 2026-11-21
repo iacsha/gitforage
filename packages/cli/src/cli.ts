@@ -12,6 +12,7 @@ import {
   appendFeedback, loadRevival, saveRevival, revivalText, catalogTopics, cleanText, loadCatalog, saveCatalog, selectCatalog, toCatalogItems, type CatalogState, type RevivalItem, intake, issuesFrom, isSafeFullName, isSafeLogin, isoDate, loadDigests, replyFor, saveDigest, toDigestItems, toRepo,
 } from "@gitforage/core";
 import { MAX_HAUL_NOTES_BYTES, parseHaulNotes, renderSite, siteBinaries, writeSite } from "@gitforage/site";
+import { earlyFindsCommand, earlyFindsForSite } from "./earlyfinds.ts";
 
 const HELP = `gitforage: personalized GitHub discovery
 
@@ -20,6 +21,7 @@ Usage:
   gitforage run     [--config interests.yml] [--mode discover|contribute] [--limit N] [--out digest.md] [--json] [--state state/seen.json]
   gitforage site    [--config interests.yml] --out DIR [--repo owner/name] [--state state/seen.json]
   gitforage feedback [--config interests.yml] [--event FILE] [--issues FILE] [--replies DIR] [--json]
+  gitforage early-finds [--config interests.yml] [--state state/seen.json]
 
 Options:
   --config FILE   interests file (default: ./interests.yml)
@@ -144,7 +146,7 @@ export async function main(argv: string[], env = process.env): Promise<number> {
     return 2;
   }
   if (args.cmd === "help") { console.log(HELP); return 0; }
-  if (!["preview", "run", "site", "feedback"].includes(args.cmd)) {
+  if (!["preview", "run", "site", "feedback", "early-finds"].includes(args.cmd)) {
     console.error(`gitforage: unknown command "${args.cmd}"\n\n${HELP}`);
     return 2;
   }
@@ -162,6 +164,7 @@ export async function main(argv: string[], env = process.env): Promise<number> {
   log(`mode: ${cfg.mode}`);
   if (args.cmd === "site") return site(args, cfg, base, log);
   if (args.cmd === "feedback") return feedback(args, cfg, base, env, log);
+  if (args.cmd === "early-finds") return earlyFindsCommand(args, cfg, base, env, log);
   if (cfg.llm.provider !== "none") log(`llm.provider is ${cfg.llm.provider}, but LLM re-ranking is not built yet; using rules only`);
 
   const token = tokenFromEnv(env);
@@ -247,7 +250,7 @@ function site(args: Args, cfg: Config, base: string, log: (m: string) => void): 
     if (loaded.problems.length) console.error(`warning: ${loaded.problems.length} revival problems, first: ${loaded.problems[0]}`);
     revival = loaded.state.items;
   }
-  const files = renderSite(cfg, digests, { repo: args.repo ?? null, catalog, revival, haulNotes: loadHaulNotes(join(base, "haul.txt")) });
+  const files = renderSite(cfg, digests, { repo: args.repo ?? null, catalog, revival, haulNotes: loadHaulNotes(join(base, "haul.txt")), earlyFinds: earlyFindsForSite(cfg, stateDir(args, base)) });
   const n = writeSite(args.out, new Map<string, string | Uint8Array>([...files, ...siteBinaries()]));
   log(`site: ${digests.length} digests, wrote ${n} files to ${args.out}`);
   return 0;
