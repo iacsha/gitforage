@@ -341,3 +341,8 @@ describe("senders", () => {
     expect(calls[0].url).toBe(`https://push.example.org:8443/n/${TOPIC}`);
   });
 });
+
+test("defang: non-ASCII domain labels are broken too", () => {
+  expect(defang("win at бонус.com or 例え.jp")).toBe("win at бонус[.]com or 例え[.]jp");
+  expect(defang("v1.2.3")).toBe("v1.2.3");
+});

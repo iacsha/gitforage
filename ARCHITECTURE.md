@@ -35,7 +35,7 @@ packages/site     static portal (density, sort and filters, the topic picker
                   and catalog.json) and Atom feed
 packages/notify   notifiers: ntfy, Telegram, webhooks (JSON, Slack, Discord)
 template/         what a portal repo starts from: interests.yml, feedback.yml,
-                  the forage and feedback workflows
+                  the forage, feedback and early-finds workflows
 demo/             the public demo portal's interests
 ```
 
@@ -49,7 +49,7 @@ TypeScript, run with bun. Dependencies are kept minimal and pinned exactly.
 
 A scheduled workflow (weekly) forages in both modes, commits `state/` (seen repos, star counts and each run's digest), builds the portal and deploys it to Pages. The portal has Discover and Get involved tabs, topic pages, an archive, an About page, a Backtest (simulated) page, a Found early page (`early-finds/`, the live record kept apart from the backtest: finds the portal showed before they reached GitHub Trending, the Hacker News front page or a star milestone, from `state/early-finds.json`, which a daily `early-finds` workflow keeps when `early_finds.enabled` is on) and an Atom feed. The Haul (`haul/`) is a numbered weekly issue of the week's three best new finds, derived from `state/digests/` on every build (no state of its own), with its own Atom feed for RSS-to-email and optional one-line notes from `haul.txt`. Every page carries Open Graph and Twitter card tags; the image and page URL are added when `site.url` is set. Keep/Skip buttons on each card open a prefilled issue that a second workflow folds into `feedback.yml`, so feedback lives in git and no server is needed. With `site.personalize`, discover runs also forage a bigger topic catalog into `state/catalog.json`, and the Discover page lets each visitor re-rank it for their own topics in their browser.
 
-Both workflows run gitforage from a pinned commit SHA, installed from its lockfile.
+All three workflows run gitforage from a pinned commit SHA, installed from its lockfile.
 
 ```
 schedule ──> forage job (contents: write)
@@ -81,6 +81,6 @@ All text from GitHub is untrusted. Names are validated, text is escaped, and the
 3. Template repo, portal, Atom feed, feedback (done).
    - 3.5 Customizable layout (done): Comfortable, Compact and List densities, card field switches, sort (score, newest, stars, rising) and source and topic filter chips, with defaults from `site.layout`.
    - 3.6 Personalize in the browser (done): a topic catalog with groups and starter packs, re-ranked in the visitor's browser; "Use my GitHub stars" (the visitor's browser asks GitHub directly); local Keep and Skip; shareable `?t=` links; GoatCounter pick events when analytics are on. The default view and the JavaScript-off page are unchanged.
-4. Optional LLM re-rank (done) and notifiers.
+4. Optional LLM re-rank and notifiers (done).
 5. Public v0.1 with a demo portal.
 6. Later: GitLab and Codeberg sources, and a hosted version.

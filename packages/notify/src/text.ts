@@ -14,7 +14,7 @@ export function defang(s: string): string {
   return s
     .replace(/:\/\//g, "[:]//")
     .replace(/\b(javascript|vbscript|data|file):/gi, "$1[:]")
-    .replace(/([A-Za-z0-9-])\.(?=[A-Za-z])/g, "$1[.]")
+    .replace(/([\p{L}\p{N}-])\.(?=\p{L})/gu, "$1[.]")
     .replace(/@/g, "＠");
 }
 

@@ -273,7 +273,7 @@ export async function llmRerank(ranked: Scored[], cfg: Config, opts: LlmOptions 
         redirect: "error", signal: AbortSignal.timeout(TIMEOUT_MS),
       });
       const raw = await readCapped(r);
-      if (!r.ok) throw new Error(`HTTP ${r.status}: ${cleanText(raw, 200)}`);
+      if (!r.ok) throw new Error(`HTTP ${r.status}: ${cleanText(redact(raw, secrets), 200)}`);
       let j: any;
       try { j = JSON.parse(raw); } catch { throw new Error("the provider did not return JSON"); }
       text = req.read(j);

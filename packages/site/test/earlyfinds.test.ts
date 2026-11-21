@@ -5,7 +5,7 @@ import { renderSite } from "../src/index.ts";
 const NOW = "2026-12-12T12:00:00.000Z";
 const cfg = validateConfig({ topics: ["hl7"], profile: "Healthcare tools.", site: { repo: "acme/portal", title: "Acme portal" }, early_finds: { enabled: true } });
 const CSP = `content="default-src &#39;none&#39;; style-src &#39;self&#39;; font-src &#39;self&#39;; script-src &#39;self&#39;; img-src &#39;self&#39; data:; base-uri &#39;none&#39;; form-action &#39;none&#39;"`;
-const base = { first_seen: "2026-11-20T13:00:00.000Z", tracked_since: "2026-11-20" };
+const base = { first_seen: "2026-11-20T13:00:00.000Z", tracked_since: "2026-11-20", trending_from: "2026-11-20", hn_from: "2026-11-20" };
 
 const ledger = (): EarlyFindsLedger => ({ version: 1, updated: NOW, repos: {
   "acme/tool": { ...base, trending_first: "2026-12-05", milestones: { "1000": "2026-12-08" }, stars_at_first_seen: 300 },

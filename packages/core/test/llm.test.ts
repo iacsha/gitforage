@@ -177,3 +177,10 @@ describe("digests carry the note, validated again on read", () => {
     expect(none.items[0].ai_note).toBeUndefined();
   });
 });
+
+test("a key echoed across the 200-character cut is still redacted", async () => {
+  const body = "x".repeat(190) + KEY + " trailing";
+  const f = (async () => new Response(body, { status: 400 })) as any;
+  const r = await llmRerank(scored(["a/one"]), anthropicCfg(), { env: { ANTHROPIC_API_KEY: KEY }, fetch: f, cacheDir: null });
+  expect(r.warnings.join(" ")).not.toContain(KEY.slice(0, 8));
+});

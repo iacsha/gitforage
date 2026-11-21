@@ -34,7 +34,7 @@ export function importPrototype(data: unknown): ImportResult {
     const shownDay = shown ? shown.slice(0, 10) : null;
     const tracked_since = shownDay && start ? (shownDay > start ? shownDay : start) : shownDay ?? start ?? undefined;
     repos[name] = {
-      first_seen: o.first_seen, tracked_since, stars_at_first_seen: o.stars_at_first_seen, trending_first: o.trending_first,
+      first_seen: o.first_seen, tracked_since, stars_at_first_seen: o.stars_at_first_seen, trending_first: o.trending_first, trending_from: tracked_since, hn_from: tracked_since,
       hn_first: o.hn_first, milestones: o.milestones, stars_last: o.stars_last, checked: o.checked,
     };
   }

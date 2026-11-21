@@ -214,7 +214,7 @@ export async function main(argv: string[], env = process.env): Promise<number> {
   }
   let llmNote = "";
   if (cfg.llm.provider !== "none") {
-    const cacheDir = args.noCache ? null : join(resolve(args.cacheDir ?? join(base, ".gitforage", "cache")), "llm");
+    const cacheDir = args.noCache || cfg.cache.ttl_hours === 0 ? null : join(resolve(args.cacheDir ?? join(base, ".gitforage", "cache")), "llm");
     const r = await llmRerank(res.ranked, cfg, { env, cacheDir, log });
     res.warnings.push(...r.warnings);
     if (r.applied) llmNote = ` The top ${cfg.llm.top} were also judged by an AI model (llm.provider ${cfg.llm.provider}); its fit counts at most ${cfg.llm.weight} points either way.`;

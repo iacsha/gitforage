@@ -87,7 +87,7 @@ Rules always run first. With `llm.provider` set, gitforage then sends the top `l
 | `openai-compatible` | `OPENAI_API_KEY` (optional) | Any `/chat/completions` endpoint at `llm.base_url`. |
 | `ollama` | none | Local Ollama at `llm.base_url`. |
 
-Keys are never read from `interests.yml`. In the template workflow, add the key as a repository secret with the same name; without it the run stays rules-only. Answers are cached for 7 days next to the API cache, so a rerun costs nothing. Any failure (no key, a network error, a reply that is not the expected JSON, a refusal) is a warning, and the rule ranking stands.
+Keys are never read from `interests.yml`. In the template workflow, add the key as a repository secret with the same name; without it the run stays rules-only. Answers are cached for 7 days next to the API cache, so a rerun costs nothing; `--no-cache` or `cache.ttl_hours: 0` skips that cache too. Any failure (no key, a network error, a reply that is not the expected JSON, a refusal) is a warning, and the rule ranking stands.
 
 The model only ever sees public repo data and your profile text. Repo text is passed as a quoted data block and the model is told not to follow instructions in it. Its reply is validated (known ids, a 0 to 10 fit), and the note is cleaned, stripped of URLs, capped at 200 characters and escaped like any other repo text. A prompt injection in a README can at worst move that one repo by `llm.weight` points and give it an odd note.
 

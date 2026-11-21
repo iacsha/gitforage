@@ -64,10 +64,11 @@ ${rows}
 </table>
 </div>` : ""}
 <h2>How this is counted</h2>
-<p>This is the live record, not a simulation. Every repo this portal has shown is tracked from the day it was first shown, and since <time datetime="${since}">${fmtDay(since)}</time> a daily check looks at GitHub Trending (all languages, daily), the Hacker News front page (stories linking the repo) and the repo's stars (milestones of 1,000, 5,000, 10,000, 25,000 and 50,000, each repo looked up about once a week).</p>
+<p>This is the live record, not a simulation. Every repo this portal shows is added to the record, and since <time datetime="${since}">${fmtDay(since)}</time> a daily check looks at GitHub Trending (all languages, daily), the Hacker News front page (stories linking the repo) and the repo's stars (milestones of 1,000, 5,000, 10,000, 25,000 and 50,000, each repo looked up about once a week).</p>
 <ul>
 <li><strong>Only later counts.</strong> A repo that reached Trending or the front page on the day it was first shown, or before, is not counted, and neither is a milestone it had already passed at its first check. A repo already big when it was shown is not an early find.</li>
-<li><strong>The first watched day does not count.</strong> A repo found on Trending the day tracking began for it may have been trending before, so only later days are credited.</li>
+<li><strong>Only what was watched counts.</strong> Trending and the front page are credited only for repos watched from the day they were shown (or the day after) and only after the first day each check worked for them, so a repo shown before tracking began, or on a day a check failed, cannot claim a lead it was never seen earning. A milestone counts only when the star count at the first lookup is known and below it.</li>
+<li><strong>Before it was shown is not seen.</strong> A repo that trended in the days before this portal first showed it, and again later, can still appear here: the record only starts on the day it was shown.</li>
 <li><strong>Dates are as observed.</strong> Trending and the front page are read once a day, so their dates are the day seen. Stars are looked up about once a week, so a milestone date can be up to six days after the real crossing, and its lead that much longer.</li>
 <li><strong>Misses are not shown.</strong> Most finds never trend, and a guide that ranks by fit is not built to predict what will. This page lists the ones that did.</li>
 </ul>

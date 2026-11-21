@@ -73,7 +73,7 @@ describe("reading the ledger", () => {
 });
 
 describe("lead math", () => {
-  const e = { first_seen: "2026-11-20T23:30:00.000Z", tracked_since: "2026-11-20" };
+  const e = { first_seen: "2026-11-20T23:30:00.000Z", tracked_since: "2026-11-20", trending_from: "2026-11-20", hn_from: "2026-11-20" };
 
   test("only days strictly after first shown (and after the first watched day) count", () => {
     expect(leadDays(e, "2026-11-19")).toBeNull(); // negative
@@ -257,7 +257,28 @@ describe("importing the prototype ledger", () => {
     expect(r.dropped.length).toBe(3);
     expect(r.ledger.repos["old/one"]).toMatchObject({ tracked_since: "2026-11-20", milestones: { "1000": "2026-11-26" } });
     expect(r.ledger.repos["new/two"].tracked_since).toBe("2026-11-23");
-    expect(earlyFinds(r.ledger).map((f) => [f.name, f.events[0].lead])).toEqual([["old/one", 24], ["new/two", 1]]);
+    // old/one was shown on 11-01 but watched only from 11-20, so its Trending day is not credited (it
+    // may have trended unseen before); the 1k milestone, crossed after a known 900-star lookup, still is.
+    expect(earlyFinds(r.ledger).map((f) => [f.name, f.events[0].lead])).toEqual([["old/one", 25], ["new/two", 1]]);
     expect(() => importPrototype({ version: 2 })).toThrow("not a prototype ledger");
+  });
+});
+
+describe("review fixes: no credit without watching from the day shown", () => {
+  const shown = "2026-11-20T10:00:00.000Z";
+  test("a source whose first successful check came days after the repo was shown is not credited", () => {
+    const l: EarlyFindsLedger = { version: 1, updated: "", repos: {
+      "fetch/failed": { first_seen: shown, tracked_since: "2026-11-20", trending_from: "2026-11-23", trending_first: "2026-11-23" },
+      "fetch/late": { first_seen: shown, tracked_since: "2026-11-20", trending_from: "2026-11-23", trending_first: "2026-11-30" },
+      "watched/ok": { first_seen: shown, tracked_since: "2026-11-20", trending_from: "2026-11-21", trending_first: "2026-11-22" },
+      "never/watched": { first_seen: shown, tracked_since: "2026-11-20", trending_first: "2026-11-25" },
+    } };
+    expect(earlyFinds(l).map((f) => f.name)).toEqual(["watched/ok"]);
+  });
+  test("a milestone with no known first star count is not credited", () => {
+    const l: EarlyFindsLedger = { version: 1, updated: "", repos: {
+      "no/baseline": { first_seen: shown, tracked_since: "2026-11-20", milestones: { "1000": "2026-11-28" } },
+    } };
+    expect(earlyFinds(l)).toEqual([]);
   });
 });

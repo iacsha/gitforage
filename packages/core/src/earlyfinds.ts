@@ -49,6 +49,10 @@ export interface EarlyFindEntry {
   stars_at_first_seen?: number;
   /** First day it was seen on GitHub Trending. */
   trending_first?: string;
+  /** The first day a Trending check succeeded while this repo was tracked. Trending is credited only after it. */
+  trending_from?: string;
+  /** The first day a Hacker News check succeeded while this repo was tracked. */
+  hn_from?: string;
   /** First HN front-page story linking it. */
   hn_first?: { date: string; id: number; points: number };
   /** Milestone ("1000") to the day a lookup first saw it crossed. */
@@ -106,6 +110,10 @@ export function toEarlyFindEntry(v: unknown): EarlyFindEntry | null {
   if (s0 !== null) e.stars_at_first_seen = s0;
   const tr = toDay(o.trending_first);
   if (tr) e.trending_first = tr;
+  const tf = toDay(o.trending_from);
+  if (tf) e.trending_from = tf;
+  const hf = toDay(o.hn_from);
+  if (hf) e.hn_from = hf;
   const hn = o.hn_first as Record<string, unknown> | undefined;
   if (hn && typeof hn === "object" && !Array.isArray(hn)) {
     const date = toDay(hn.date), id = toCount(hn.id, 1), points = toCount(hn.points);
@@ -299,6 +307,8 @@ export async function updateEarlyFinds(gh: GitHub, seen: SeenState, ledger: Earl
     const names = parseTrending(await fetchCapped(fetchFn, TRENDING_URL));
     run.trendingToday = names.length;
     if (!names.length) run.warnings.push("early finds: no repos found on the Trending page (its layout may have changed)");
+    // The check worked today: every tracked repo is now watched on Trending from today on.
+    for (const e of Object.values(ledger.repos)) if (!e.trending_from) e.trending_from = today;
     for (const k of names) {
       const e = ledger.repos[k];
       if (e && Object.hasOwn(ledger.repos, k) && !e.trending_first) { e.trending_first = today; run.trendingHits++; }
@@ -317,6 +327,7 @@ export async function updateEarlyFinds(gh: GitHub, seen: SeenState, ledger: Earl
     } catch (e) {
       throw e instanceof SyntaxError ? new Error("HN answered with something that is not JSON") : e;
     }
+    for (const e of Object.values(ledger.repos)) if (!e.hn_from) e.hn_from = today;
     for (const h of parseHn(data)) {
       const e = Object.hasOwn(ledger.repos, h.name) ? ledger.repos[h.name] : undefined;
       if (e && !e.hn_first) { e.hn_first = { date: h.date, id: h.id, points: h.points }; run.hnHits++; }
@@ -387,20 +398,29 @@ export function leadDays(e: Pick<EarlyFindEntry, "first_seen" | "tracked_since">
   return lead >= 1 && dayNum(ev) > dayNum(since) ? lead : null;
 }
 
+/** True when a source's first successful check came no later than the day after the repo was shown. */
+function watchedFromShown(e: EarlyFindEntry, from: string | undefined): boolean {
+  const shown = toIsoTime(e.first_seen), f = toDay(from);
+  return Boolean(shown && f && dayNum(f) <= dayNum(shown.slice(0, 10)) + 1);
+}
+
 /** Repos with at least one qualifying event, longest first lead first. */
 export function earlyFinds(l: EarlyFindsLedger): EarlyFind[] {
   const out: EarlyFind[] = [];
   for (const [name, e] of Object.entries(l.repos)) {
     const events: EarlyEvent[] = [];
-    const add = (kind: EarlySignal, date: string | undefined, milestone?: number) => {
-      const lead = date ? leadDays(e, date) : null;
+    const add = (kind: EarlySignal, date: string | undefined, milestone?: number, from?: string) => {
+      let lead = date ? leadDays(e, date) : null;
+      if (lead !== null && from && dayNum(date!) <= dayNum(from)) lead = null;
       if (lead !== null) events.push({ kind, date: date!, lead, ...(milestone ? { milestone } : {}) });
     };
-    add("trending", e.trending_first);
-    add("hn", e.hn_first?.date);
+    // Trending and HN count only when that source was watched from (about) the day the repo
+    // was shown: a backfilled repo, or one whose first checks failed, may have reached it unseen.
+    if (watchedFromShown(e, e.trending_from)) add("trending", e.trending_first, undefined, e.trending_from);
+    if (watchedFromShown(e, e.hn_from)) add("hn", e.hn_first?.date, undefined, e.hn_from);
     for (const m of MILESTONES) {
-      // A milestone already passed at the first lookup never counts.
-      if (e.stars_at_first_seen !== undefined && e.stars_at_first_seen >= m) continue;
+      // A milestone counts only with a known star count at the first lookup, below it.
+      if (e.stars_at_first_seen === undefined || e.stars_at_first_seen >= m) continue;
       add("stars", e.milestones?.[String(m)], m);
     }
     if (!events.length) continue;
