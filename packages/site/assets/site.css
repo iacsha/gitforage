@@ -189,6 +189,7 @@ kbd {
 .brand { display: inline-flex; align-items: center; gap: 0.55rem; color: var(--text); text-decoration: none; }
 .brand:hover { color: var(--text); }
 .brand-name { font-family: var(--serif); font-weight: 650; font-size: 1.45rem; letter-spacing: -0.01em; line-height: 1; }
+.brand-tag { align-self: flex-start; margin-top: 0.1rem; padding: 0.05rem 0.4rem; border: 1px solid var(--border); border-radius: 999px; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 .brand-mark { flex: none; width: 2.5rem; height: 2.5rem; }
 .brand:hover .brand-mark { transform: rotate(-6deg); }
 .logo-ink { stroke: var(--logo-ink); stroke-width: 2.5; stroke-linejoin: round; }

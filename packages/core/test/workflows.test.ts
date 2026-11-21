@@ -98,6 +98,8 @@ describe("template and demo files", () => {
       "cli", "terminal", "devtools", "claude-code", "mcp", "ai-agents"]);
     expect(c.stars_from).toBeNull();
     expect(c.site.analytics).toEqual({ provider: "goatcounter", code: "gitforage" });
+    expect(c.site.title).toBe("gitforage");
+    expect(c.site.tag).toBe("beta");
   });
 
   test("the template's feedback.yml parses", () => {

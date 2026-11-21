@@ -102,6 +102,8 @@ export interface SiteConfig {
   /** The portal repo (owner/name) that Keep and Skip issues go to. In the Action, GITHUB_REPOSITORY fills it in. */
   repo: string | null;
   title: string;
+  /** Optional short tag shown beside the title, like "beta". Lowercase letters, digits, spaces and hyphens. */
+  tag: string | null;
   /** Public base URL of the portal, ending in /. Defaults to the GitHub Pages URL of repo. */
   url: string | null;
   /** Optional cookieless analytics. Off unless set. */
@@ -511,9 +513,9 @@ export function validateConfig(raw: unknown, source = "interests.yml"): Config {
   }
 
   const si = c.section(raw.site, "site");
-  c.unknownKeys(si, ["repo", "title", "url", "analytics", "layout", "personalize"], "site");
+  c.unknownKeys(si, ["repo", "title", "tag", "url", "analytics", "layout", "personalize"], "site");
   const site: SiteConfig = {
-    repo: null, title: "gitforage", url: null, analytics: null, layout: { ...DEFAULT_LAYOUT, fields: { ...DEFAULT_LAYOUT.fields } },
+    repo: null, title: "gitforage", tag: null, url: null, analytics: null, layout: { ...DEFAULT_LAYOUT, fields: { ...DEFAULT_LAYOUT.fields } },
     personalize: { ...DEFAULT_PERSONALIZE },
   };
   if (si.repo !== undefined && si.repo !== null && si.repo !== "") {
@@ -524,6 +526,10 @@ export function validateConfig(raw: unknown, source = "interests.yml"): Config {
     if (typeof si.title !== "string" || !si.title.trim()) c.err("site.title", "must be text");
     else if (si.title.length > 80) c.err("site.title", "at most 80 characters");
     else site.title = si.title.trim();
+  }
+  if (si.tag !== undefined && si.tag !== null && si.tag !== "") {
+    if (typeof si.tag !== "string" || !/^[a-z0-9][a-z0-9 -]{0,15}$/.test(si.tag)) c.err("site.tag", "must be a short lowercase label (letters, digits, spaces, hyphens; at most 16)");
+    else site.tag = si.tag;
   }
   if (si.url !== undefined && si.url !== null && si.url !== "") {
     const u = typeof si.url === "string" ? normaliseBaseUrl(si.url) : null;

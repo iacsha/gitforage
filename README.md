@@ -222,6 +222,7 @@ See [`interests.example.yml`](interests.example.yml). You need at least one of `
 | `cache.ttl_hours` | `12` | How long cached API responses are reused. `0` turns the cache off. |
 | `site.repo` | none | The portal repo, `owner/name`, for Keep and Skip links. The workflow passes it, so you rarely set it. |
 | `site.title` | `gitforage` | The portal's name. |
+| `site.tag` | none | Optional short label beside the name, like `beta`. Lowercase letters, digits, spaces and hyphens, at most 16. |
 | `site.url` | Pages URL | The public address, used in the feed. Defaults to `https://<owner>.github.io/<repo>/`. |
 | `site.analytics` | off | `{ provider: goatcounter, code: <your code> }` for cookieless visit counts. |
 | `site.layout.density` | `comfortable` | The default card layout: `comfortable`, `compact` (smaller text, more tiles) or `list` (one row per repo). See [Layout](#layout). |

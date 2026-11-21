@@ -64,14 +64,14 @@ describe("digests", () => {
 describe("config: site and feedback sections", () => {
   test("defaults", () => {
     const c = validateConfig({ topics: ["hl7"] });
-    expect(c.site).toEqual({ repo: null, title: "gitforage", url: null, analytics: null, layout: DEFAULT_LAYOUT, personalize: DEFAULT_PERSONALIZE });
+    expect(c.site).toEqual({ repo: null, title: "gitforage", tag: null, url: null, analytics: null, layout: DEFAULT_LAYOUT, personalize: DEFAULT_PERSONALIZE });
     expect(c.feedback).toEqual({ visitors: true, visitor_weight: 0.25, max_per_user: 3, min_account_age_days: 30 });
   });
 
   test("valid values", () => {
     const c = validateConfig({ topics: ["hl7"], site: { repo: "acme/portal", title: " Acme ", url: "https://forage.example.org/demo" },
       feedback: { visitors: false, visitor_weight: 0.5, max_per_user: 5, min_account_age_days: 0 } });
-    expect(c.site).toEqual({ repo: "acme/portal", title: "Acme", url: "https://forage.example.org/demo/", analytics: null, layout: DEFAULT_LAYOUT, personalize: DEFAULT_PERSONALIZE });
+    expect(c.site).toEqual({ repo: "acme/portal", title: "Acme", tag: null, url: "https://forage.example.org/demo/", analytics: null, layout: DEFAULT_LAYOUT, personalize: DEFAULT_PERSONALIZE });
     expect(c.feedback).toEqual({ visitors: false, visitor_weight: 0.5, max_per_user: 5, min_account_age_days: 0 });
   });
 

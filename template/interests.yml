@@ -41,6 +41,7 @@ digest_size: 20                   # cards per tab per run
 
 site:
   title: My gitforage
+  # tag: beta          # optional short label beside the title
   # repo: is filled in by the workflow (this repo). Set url: only for a custom domain.
   # url: https://forage.example.org/
   # Optional cookieless visit counts with GoatCounter (https://www.goatcounter.com).

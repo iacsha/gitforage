@@ -171,7 +171,7 @@ ${o.personalize ? html`<script type="module" src="${href(`${o.root}assets/person
 <a class="skip-link" href="#main">Skip to content</a>
 <header class="site-head">
 <div class="wrap head-row">
-<a class="brand" href="${href(`${o.root}index.html`)}">${BRAND_MARK}<span class="brand-name">${site.title}</span></a>
+<a class="brand" href="${href(`${o.root}index.html`)}">${BRAND_MARK}<span class="brand-name">${site.title}</span>${site.tag ? html`<span class="brand-tag">${site.tag}</span>` : ""}</a>
 <nav aria-label="Main">
 <ul class="nav">
 ${link("discover", "index.html", STRINGS.discoverNav)}

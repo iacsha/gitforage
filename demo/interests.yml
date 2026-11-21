@@ -1,4 +1,4 @@
-# The public gitforage demo portal. Its default view covers five communities, chosen
+# The public gitforage field guide at gitforage.dev. Its default view covers five communities, chosen
 # to show the range: healthcare interoperability, self-hosting, home automation,
 # developer tools and AI coding agents. There is no stars_from, so the demo stays
 # neutral: its profile is learned from the seeds below, not from anyone's stars.
@@ -88,8 +88,9 @@ revival:
   max_candidates: 10
 
 site:
-  repo: iacsha/gitforage-demo
-  title: gitforage demo
+  repo: iacsha/gitforage-field-guide
+  title: gitforage
+  tag: beta
   # Cookieless visit counts (gitforage.goatcounter.com).
   # With personalize on, pack and topic picks are counted as GoatCounter events too.
   analytics: { provider: goatcounter, code: gitforage }
