@@ -2,7 +2,7 @@
 
 gitforage is pre-1.0. Each release names the commit the template workflows pin.
 
-## 0.1.0 (unreleased)
+## 0.1.0 (2026-11-21)
 
 The first public release: everything a portal needs, with no server and no paid key.
 

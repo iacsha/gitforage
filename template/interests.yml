@@ -58,3 +58,18 @@ feedback:
   visitor_weight: 0.25            # a visitor's mark counts this much of yours
   max_per_user: 3                 # marks per person per day
   min_account_age_days: 30        # ignore brand-new accounts
+
+# Optional extras, off until you uncomment them. Secrets never go in this file:
+# add them under Settings, Secrets and variables, Actions.
+#
+# llm:                            # AI re-rank of the top finds, with a labelled AI field note
+#   provider: anthropic           # anthropic (secret ANTHROPIC_API_KEY) | openai-compatible | ollama
+#   top: 20                       # how many of the rule-ranked top finds the model judges
+#   weight: 4                     # most points the model can add or take away
+#
+# notify:                         # one short message after each weekly run
+#   top: 5
+#   channels: [telegram]          # ntfy | telegram | webhook; see the README for each channel's secrets
+#
+# early_finds:                    # the Found early page; the daily early-finds workflow keeps its record
+#   enabled: true

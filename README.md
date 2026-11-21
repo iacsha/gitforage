@@ -19,7 +19,7 @@ The portal is a static site with an Atom feed, a weekly issue called The Haul, a
 
 About five minutes, no server, no paid key. Everything runs in GitHub Actions on your own repo.
 
-1. Make a new repo and copy in [`template/`](template), including the hidden `.github` folder.
+1. Open [gitforage-template](https://github.com/iacsha/gitforage-template) and choose **Use this template**, **Create a new repository** (public, so Pages is free). Or copy [`template/`](template) into a new repo by hand, including the hidden `.github` folder.
 2. Edit `interests.yml`: a few topics, some seed projects, or your username in `stars_from`.
 3. Settings, Pages, Source: **GitHub Actions**.
 4. Actions, **forage**, Run workflow. Your portal appears at `https://<you>.github.io/<repo>/` and then updates every Sunday.
