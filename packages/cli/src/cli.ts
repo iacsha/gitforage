@@ -2,7 +2,7 @@
 // gitforage CLI. `preview` prints a ranked list and writes nothing but the API cache.
 // `run` reports only items not yet in state/seen.json, records them, emits markdown and
 // keeps the digest in state/digests/ for the portal. `site` builds the static portal.
-// `feedback` folds Keep/Skip issues into feedback.yml.
+// `feedback` folds Keep/Skip issues into feedback.yml. `notify` pings the configured channels.
 
 import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -11,7 +11,8 @@ import {
   seenKeys, toJson, toMarkdown, toText, tokenFromEnv, withMode, MODES, type Config, type ForageResult, type Mode,
   appendFeedback, llmRerank, loadRevival, saveRevival, revivalText, catalogTopics, cleanText, loadCatalog, saveCatalog, selectCatalog, toCatalogItems, type CatalogState, type RevivalItem, intake, issuesFrom, isSafeFullName, isSafeLogin, isoDate, loadDigests, replyFor, saveDigest, toDigestItems, toRepo,
 } from "@gitforage/core";
-import { MAX_HAUL_NOTES_BYTES, parseHaulNotes, renderSite, siteBinaries, writeSite } from "@gitforage/site";
+import { MAX_HAUL_NOTES_BYTES, pagesUrl, parseHaulNotes, renderSite, siteBinaries, writeSite } from "@gitforage/site";
+import { buildSummary, notify as sendNotifications } from "@gitforage/notify";
 
 const HELP = `gitforage: personalized GitHub discovery
 
@@ -20,6 +21,7 @@ Usage:
   gitforage run     [--config interests.yml] [--mode discover|contribute] [--limit N] [--out digest.md] [--json] [--state state/seen.json]
   gitforage site    [--config interests.yml] --out DIR [--repo owner/name] [--state state/seen.json]
   gitforage feedback [--config interests.yml] [--event FILE] [--issues FILE] [--replies DIR] [--json]
+  gitforage notify  [--config interests.yml] [--state state/seen.json] [--date YYYY-MM-DD] [--repo owner/name] [--dry-run]
 
 Options:
   --config FILE   interests file (default: ./interests.yml)
@@ -38,12 +40,16 @@ Options:
   --issues FILE   feedback: a JSON list of issues, as the REST API returns them
                   (without --event or --issues, GITFORAGE_ISSUES_JSON is read)
   --replies DIR   feedback: write one reply per handled issue to DIR/<number>.md
+  --date DATE     notify: the day whose digests to send (default: today, UTC)
+  --dry-run       notify: print the messages and send nothing
   --cache-dir DIR response cache (default: .gitforage/cache next to the config)
   --no-cache      skip the response cache for this run
   --quiet         no progress or stats on stderr
   --debug         preview and run: list every dropped repo with its reason on stderr
 
 Auth: set GITHUB_TOKEN (or GH_TOKEN). Without one, GitHub allows 60 requests an hour.
+Notify secrets come from the environment only: GITFORAGE_NTFY_TOPIC (+ GITFORAGE_NTFY_TOKEN),
+GITFORAGE_TELEGRAM_BOT_TOKEN + GITFORAGE_TELEGRAM_CHAT_ID, GITFORAGE_WEBHOOK_URL.
 `;
 
 export interface Args {
@@ -60,6 +66,8 @@ export interface Args {
   event?: string;
   issues?: string;
   replies?: string;
+  date?: string;
+  dryRun: boolean;
   noCache: boolean;
   quiet: boolean;
   debug: boolean;
@@ -68,7 +76,7 @@ export interface Args {
 export class UsageError extends Error {}
 
 export function parseArgs(argv: string[]): Args {
-  const a: Args = { cmd: argv[0] ?? "help", config: "interests.yml", json: false, noCache: false, quiet: false, debug: false };
+  const a: Args = { cmd: argv[0] ?? "help", config: "interests.yml", json: false, dryRun: false, noCache: false, quiet: false, debug: false };
   const need = (i: number, flag: string) => {
     const v = argv[i + 1];
     if (v === undefined || v.startsWith("--")) throw new UsageError(`${flag} needs a value`);
@@ -104,6 +112,13 @@ export function parseArgs(argv: string[]): Args {
       case "--event": a.event = need(i++, f); break;
       case "--issues": a.issues = need(i++, f); break;
       case "--replies": a.replies = need(i++, f); break;
+      case "--date": {
+        const d = need(i++, f);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || isoDate(Date.parse(d) || 0) !== d) throw new UsageError("--date must be a date like 2026-11-22");
+        a.date = d;
+        break;
+      }
+      case "--dry-run": a.dryRun = true; break;
       case "--no-cache": a.noCache = true; break;
       case "--quiet": a.quiet = true; break;
       case "--debug": a.debug = true; break;
@@ -144,7 +159,7 @@ export async function main(argv: string[], env = process.env): Promise<number> {
     return 2;
   }
   if (args.cmd === "help") { console.log(HELP); return 0; }
-  if (!["preview", "run", "site", "feedback"].includes(args.cmd)) {
+  if (!["preview", "run", "site", "feedback", "notify"].includes(args.cmd)) {
     console.error(`gitforage: unknown command "${args.cmd}"\n\n${HELP}`);
     return 2;
   }
@@ -162,6 +177,7 @@ export async function main(argv: string[], env = process.env): Promise<number> {
   log(`mode: ${cfg.mode}`);
   if (args.cmd === "site") return site(args, cfg, base, log);
   if (args.cmd === "feedback") return feedback(args, cfg, base, env, log);
+  if (args.cmd === "notify") return notify(args, cfg, base, env, log);
 
   const token = tokenFromEnv(env);
   if (!token) log("no GITHUB_TOKEN or GH_TOKEN set: limited to 60 requests an hour, expect a partial result");
@@ -336,6 +352,28 @@ async function feedback(args: Args, cfg: Config, base: string, env: Record<strin
   else for (const o of outcomes) log(`#${o.number}: ${o.status === "accepted" ? `recorded ${o.mark.mark} ${o.mark.repo} (${o.mark.from})` : `not recorded: ${o.reason}`}`);
   log(`feedback: ${issues.length} issues read, ${outcomes.length} handled, ${added.length} marks added`);
   return 0;
+}
+
+/**
+ * Ping the channels under notify: with the top finds of one day's digests (read through
+ * the validated loader). Nothing configured or nothing new is not an error; a failed send is.
+ */
+async function notify(args: Args, cfg: Config, base: string, env: Record<string, string | undefined>, log: (m: string) => void): Promise<number> {
+  if (!cfg.notify.channels.length) { log("notify: no channels configured (notify.channels), nothing to do"); return 0; }
+  const date = args.date ?? isoDate(Date.now());
+  const { digests, problems } = loadDigests(join(stateDir(args, base), "digests"));
+  for (const p of problems) console.error(`warning: ${p}`);
+  const repo = args.repo ?? cfg.site.repo;
+  const summary = buildSummary(digests, { date, top: cfg.notify.top, portal: cfg.site.url ?? (repo ? pagesUrl(repo) : null), title: cfg.site.title });
+  if (!summary.total) { log(`notify: no new finds in the digests for ${date}, nothing sent`); return 0; }
+  const outcomes = await sendNotifications({ config: cfg.notify, summary, env, dryRun: args.dryRun });
+  for (const o of outcomes) {
+    if (o.preview !== undefined) console.log(`--- ${o.channel} ---\n${o.preview}\n`);
+    const line = `notify: ${o.channel}: ${o.status} (${o.detail})`;
+    // Outcomes are always reported, even with --quiet.
+    console.error(o.status === "skipped" ? `warning: ${line}` : line);
+  }
+  return outcomes.some((o) => o.status === "failed") ? 1 : 0;
 }
 
 if (import.meta.main) {

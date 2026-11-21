@@ -17,6 +17,7 @@
       },
       "dependencies": {
         "@gitforage/core": "workspace:*",
+        "@gitforage/notify": "workspace:*",
         "@gitforage/site": "workspace:*",
       },
     },
@@ -24,6 +25,16 @@
       "name": "@gitforage/core",
       "version": "0.0.1",
       "dependencies": {
+        "yaml": "2.9.1",
+      },
+    },
+    "packages/notify": {
+      "name": "@gitforage/notify",
+      "version": "0.0.1",
+      "dependencies": {
+        "@gitforage/core": "workspace:*",
+      },
+      "devDependencies": {
         "yaml": "2.9.1",
       },
     },
@@ -37,6 +48,8 @@
   },
   "packages": {
     "@gitforage/core": ["@gitforage/core@workspace:packages/core"],
+
+    "@gitforage/notify": ["@gitforage/notify@workspace:packages/notify"],
 
     "@gitforage/site": ["@gitforage/site@workspace:packages/site"],
 

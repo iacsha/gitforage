@@ -29,10 +29,10 @@ packages/core     interests.yml schema, GitHub client (cache, rate limits),
                   sanitising of untrusted text
                   run digests, feedback intake from Keep/Skip issues
                   the revival radar (dormant upstream, live fork)
-packages/cli      gitforage preview | run | site | feedback
+packages/cli      gitforage preview | run | site | feedback | notify
 packages/site     static portal (density, sort and filters, the topic picker
                   and catalog.json) and Atom feed
-packages/notify   ntfy, Telegram, webhooks, email (coming)
+packages/notify   notifiers: ntfy, Telegram, webhooks (JSON, Slack, Discord)
 template/         what a portal repo starts from: interests.yml, feedback.yml,
                   the forage and feedback workflows
 demo/             the public demo portal's interests

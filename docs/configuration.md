@@ -52,6 +52,7 @@ See [`interests.example.yml`](../interests.example.yml). You need at least one o
 | `revival.dormancy_months` | `12` | No push for this many months (3 to 120), or archived, counts as dormant. |
 | `revival.max_candidates` | `10` | Upstreams examined afresh per run (1 to 50). Each costs at most 5 API calls; a check is reused from `state/revival.json` for 28 days. |
 | `revival.min_fork_stars` | `5` | Stars a fork needs to count as carrying the project (3 open issues of its own also count). |
+| `notify.*` | off | A short message after each run, to ntfy, Telegram or a webhook. See [Notifications](#notifications). |
 
 Archived and disabled repos are always dropped, as are your seeds and the repos `stars_from` has starred.
 
@@ -88,3 +89,36 @@ Rules always run first. With `llm.provider` set, gitforage then sends the top `l
 Keys are never read from `interests.yml`. In the template workflow, add the key as a repository secret with the same name; without it the run stays rules-only. Answers are cached for 7 days next to the API cache, so a rerun costs nothing. Any failure (no key, a network error, a reply that is not the expected JSON, a refusal) is a warning, and the rule ranking stands.
 
 The model only ever sees public repo data and your profile text. Repo text is passed as a quoted data block and the model is told not to follow instructions in it. Its reply is validated (known ids, a 0 to 10 fit), and the note is cleaned, stripped of URLs, capped at 200 characters and escaped like any other repo text. A prompt injection in a README can at worst move that one repo by `llm.weight` points and give it an odd note.
+
+## Notifications
+
+After a run, `gitforage notify` can send one short message: the date, the top finds of each mode (name, score and top reason, each linked to its GitHub page) and a link to the portal. The template workflow runs it after the state is committed, as an optional step that can never block the deploy.
+
+```yaml
+notify:
+  top: 5                            # finds per mode in the message, 1 to 20
+  channels: [ntfy, telegram, webhook]
+  webhook_format: json              # json, slack or discord
+  ntfy_server: https://ntfy.sh      # or your own ntfy server (https only)
+```
+
+| Key | Default | Meaning |
+|---|---|---|
+| `notify.top` | `5` | Finds per mode in the message (1 to 20). |
+| `notify.channels` | `[]` | Any of `ntfy`, `telegram` and `webhook`. Empty sends nothing. |
+| `notify.webhook_format` | `json` | The webhook's payload: `json` (structured, below), `slack` (an incoming webhook's `text`) or `discord` (a webhook's `content`). |
+| `notify.ntfy_server` | `https://ntfy.sh` | The ntfy server. Must be `https://`, with no credentials, query or fragment. |
+
+**Secrets never go in `interests.yml`.** Each channel reads them from environment variables, which the template workflow fills from repository secrets (Settings, Secrets and variables, Actions):
+
+| Channel | Variables |
+|---|---|
+| `ntfy` | `GITFORAGE_NTFY_TOPIC`, and `GITFORAGE_NTFY_TOKEN` for a protected topic (sent as a bearer token). On the public ntfy.sh the topic name is the password, so pick a long random one. |
+| `telegram` | `GITFORAGE_TELEGRAM_BOT_TOKEN` (from @BotFather) and `GITFORAGE_TELEGRAM_CHAT_ID` (a numeric chat id or `@channelname`). |
+| `webhook` | `GITFORAGE_WEBHOOK_URL`, an `https://` URL. Slack and Discord webhook URLs carry their token, so treat the URL as a secret. |
+
+A channel in `notify.channels` whose variables are not set is skipped with a warning, so you can list a channel before adding its secret. A variable that is set but malformed, or a request that fails, counts as a failure: `gitforage notify` exits 1 and the workflow step shows it, but the portal is still deployed. Run `gitforage notify --dry-run` to see the messages without sending them.
+
+The `json` webhook posts `{ version: 1, source: "gitforage", date, title, total, portal, text, items: [{ mode, full_name, url, score, reason }] }`, where `text` is the plain-text message.
+
+Email is not built in. The Haul has its own Atom feed (`haul/feed.xml`); point an RSS-to-email service at it for a weekly email.
