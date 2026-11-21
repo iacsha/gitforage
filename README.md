@@ -13,7 +13,7 @@ gitforage goes out each week and forages GitHub for projects worth your time, in
 
 Every find comes with a field note and its reasons ("3 of your topics, ~40 stars a month, top 10% in hl7"), so you can see why it made the haul. gitforage ranks by fit to you, not by popularity. It remembers what it has shown you, and your Keep and Skip marks move the ranking.
 
-The portal is a static site with an Atom feed, a weekly issue called The Haul, a Get involved tab for contributors, and optional in-browser personalization. Rules only, no LLM, no server.
+The portal is a static site with an Atom feed, a weekly issue called The Haul, a Get involved tab for contributors, a Found early record, and optional in-browser personalization. Rules first; an AI re-rank and notifications are optional. No server.
 
 ## Run your own
 
@@ -23,6 +23,12 @@ About five minutes, no server, no paid key. Everything runs in GitHub Actions on
 2. Edit `interests.yml`: a few topics, some seed projects, or your username in `stars_from`.
 3. Settings, Pages, Source: **GitHub Actions**.
 4. Actions, **forage**, Run workflow. Your portal appears at `https://<you>.github.io/<repo>/` and then updates every Sunday.
+
+Optional extras, each switched on in `interests.yml` with its secret added under Settings, Secrets and variables, Actions:
+
+- **AI re-rank** (`llm`): `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, or a local Ollama. See [AI re-rank](docs/configuration.md#ai-re-rank-optional).
+- **Notifications** (`notify`): ntfy, Telegram or a webhook. See [Notifications](docs/configuration.md#notifications).
+- **Found early** (`early_finds`): no secret; a daily workflow keeps the record. See [the portal](docs/portal.md).
 
 The workflows need no secrets, and run gitforage from one pinned commit (`GITFORAGE_SHA`). Details: [docs/development.md](docs/development.md#why-a-pinned-commit).
 
