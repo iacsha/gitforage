@@ -71,6 +71,8 @@ export interface Config {
   feedback: FeedbackConfig;
   /** Revival radar: dormant upstreams in your topics carried on by a live fork (revival.ts). */
   revival: RevivalConfig;
+  /** Push notifications after a run (packages/notify). Secrets come from the environment only. */
+  notify: NotifyConfig;
 }
 
 export interface RevivalConfig {
@@ -213,7 +215,7 @@ export class ConfigError extends Error {
 
 const TOP_KEYS = [
   "profile", "topics", "keywords", "seeds", "stars_from", "exclude", "filters",
-  "cadence", "digest_size", "llm", "mode", "weights", "limits", "cache", "popularity", "site", "feedback", "revival",
+  "cadence", "digest_size", "llm", "mode", "weights", "limits", "cache", "popularity", "site", "feedback", "revival", "notify",
 ];
 const CADENCES: Cadence[] = ["daily", "weekly", "monthly"];
 const PROVIDERS: LlmProvider[] = ["none", "anthropic", "openai-compatible", "ollama"];
@@ -584,10 +586,12 @@ export function validateConfig(raw: unknown, source = "interests.yml"): Config {
   };
   if (revival.enabled && topics.length === 0) c.err("revival.enabled", "the revival radar searches your topics, so it needs topics");
 
+  const notify = notifySection(c, raw.notify);
+
   if (c.problems.length) throw new ConfigError(source, c.problems);
   return {
     profile, topics, keywords, seeds, stars_from, exclude, filters, cadence, digest_size,
-    llm: { provider, model }, mode, weights: weightsFor(mode, weight_overrides), weight_overrides, limits, cache: { ttl_hours: ttl }, popularity, site, feedback, revival,
+    llm: { provider, model }, mode, weights: weightsFor(mode, weight_overrides), weight_overrides, limits, cache: { ttl_hours: ttl }, popularity, site, feedback, revival, notify,
   };
 }
 
@@ -631,4 +635,61 @@ export function loadConfig(path: string): Config {
     throw new ConfigError(path, [`cannot read the file (${(e as NodeJS.ErrnoException).code ?? (e as Error).message})`]);
   }
   return parseConfig(text, path);
+}
+
+// notify: which channels `gitforage notify` pings after a run. Only the shape lives here;
+// the secrets (ntfy topic, bot token, webhook URL) come from environment variables only.
+
+export const NOTIFY_CHANNELS = ["ntfy", "telegram", "webhook"] as const;
+export const WEBHOOK_FORMATS = ["json", "slack", "discord"] as const;
+export type NotifyChannel = (typeof NOTIFY_CHANNELS)[number];
+export type WebhookFormat = (typeof WEBHOOK_FORMATS)[number];
+
+export interface NotifyConfig {
+  /** Items per mode in the message (1 to 20). */
+  top: number;
+  /** Channels to send to. Empty (the default) sends nothing. */
+  channels: NotifyChannel[];
+  /** Payload shape for the generic webhook. */
+  webhook_format: WebhookFormat;
+  /** ntfy server base URL (https), normalised to end in /. */
+  ntfy_server: string;
+}
+
+export const DEFAULT_NOTIFY: NotifyConfig = { top: 5, channels: [], webhook_format: "json", ntfy_server: "https://ntfy.sh/" };
+
+/** An https server base URL with no credentials, query or fragment; a port is allowed (self-hosted ntfy). */
+export function normaliseServerUrl(v: string): string | null {
+  let u: URL;
+  try {
+    u = new URL(v);
+  } catch {
+    return null;
+  }
+  if (u.protocol !== "https:" || u.username || u.password || u.search || u.hash) return null;
+  if (!/^[a-z0-9.-]+$/.test(u.hostname)) return null;
+  const path = u.pathname.endsWith("/") ? u.pathname : `${u.pathname}/`;
+  if (!/^[A-Za-z0-9._~\/-]*$/.test(path) || path.length > 200) return null;
+  return `https://${u.host}${path}`;
+}
+
+function notifySection(c: Checker, v: unknown): NotifyConfig {
+  const n = c.section(v, "notify");
+  c.unknownKeys(n, Object.keys(DEFAULT_NOTIFY), "notify");
+  const out: NotifyConfig = { ...DEFAULT_NOTIFY, channels: [] };
+  out.top = c.int(n.top, "notify.top", DEFAULT_NOTIFY.top, 1, 20);
+  const list = c.strList(n.channels, "notify.channels", { lower: true });
+  const bad = list.filter((x) => !(NOTIFY_CHANNELS as readonly string[]).includes(x));
+  if (bad.length) c.err("notify.channels", `must be some of ${NOTIFY_CHANNELS.join(", ")} (got ${bad.join(", ")})`);
+  else out.channels = list as NotifyChannel[];
+  if (n.webhook_format !== undefined && n.webhook_format !== null) {
+    if (!(WEBHOOK_FORMATS as readonly unknown[]).includes(n.webhook_format)) c.err("notify.webhook_format", `must be one of ${WEBHOOK_FORMATS.join(", ")}`);
+    else out.webhook_format = n.webhook_format as WebhookFormat;
+  }
+  if (n.ntfy_server !== undefined && n.ntfy_server !== null) {
+    const u = typeof n.ntfy_server === "string" ? normaliseServerUrl(n.ntfy_server) : null;
+    if (!u) c.err("notify.ntfy_server", "must be a plain https:// URL (no credentials, query or #fragment)");
+    else out.ntfy_server = u;
+  }
+  return out;
 }

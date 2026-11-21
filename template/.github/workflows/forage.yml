@@ -92,6 +92,19 @@ jobs:
           done
           exit 1
 
+      # Optional: pings the channels listed under notify: in interests.yml. With none
+      # listed it does nothing; a channel whose secret is not set is skipped. Secrets reach
+      # this step only, through env:. A failed ping never blocks the deploy.
+      - name: Notify
+        continue-on-error: true
+        env:
+          GITFORAGE_NTFY_TOPIC: ${{ secrets.GITFORAGE_NTFY_TOPIC }}
+          GITFORAGE_NTFY_TOKEN: ${{ secrets.GITFORAGE_NTFY_TOKEN }}
+          GITFORAGE_TELEGRAM_BOT_TOKEN: ${{ secrets.GITFORAGE_TELEGRAM_BOT_TOKEN }}
+          GITFORAGE_TELEGRAM_CHAT_ID: ${{ secrets.GITFORAGE_TELEGRAM_CHAT_ID }}
+          GITFORAGE_WEBHOOK_URL: ${{ secrets.GITFORAGE_WEBHOOK_URL }}
+        run: bun .gitforage-src/packages/cli/src/cli.ts notify --config interests.yml --repo "$GITHUB_REPOSITORY"
+
       - name: Upload the portal
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:

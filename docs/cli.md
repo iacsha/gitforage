@@ -21,12 +21,14 @@ gitforage run      [--config interests.yml] [--mode discover|contribute] [--limi
                    [--feedback feedback.yml] [--debug]
 gitforage site     [--config interests.yml] --out DIR [--repo owner/name] [--state state/seen.json]
 gitforage feedback [--config interests.yml] [--event FILE] [--issues FILE] [--replies DIR] [--feedback feedback.yml] [--json]
+gitforage notify   [--config interests.yml] [--state state/seen.json] [--date YYYY-MM-DD] [--repo owner/name] [--dry-run]
 ```
 
 - `preview` prints a ranked list: score, repo, stars, source, top reasons and link. It ignores the seen state and does not write it. With `--out` it writes markdown instead.
 - `run` leaves out anything already in `state/seen.json`, prints a markdown digest (or writes it with `--out`), records what it reported in `state/seen.json`, records star counts in `state/stars.json` for rising repos, writes `state/catalog.json` in discover mode when `site.personalize` is on, and keeps the list in `state/digests/<date>-<mode>.json` for the portal.
 - `site` builds the portal from `state/digests/` into `--out`. `--repo` names the portal repo for the Keep and Skip links (the workflow passes its own repo).
 - `feedback` reads issues as JSON: a GitHub `issues` event (`--event`), a list as the REST API returns it (`--issues`), or the `GITFORAGE_ISSUES_JSON` variable. It appends accepted marks to `feedback.yml` and, with `--replies DIR`, writes a reply per handled issue to `DIR/<number>.md`. Issues that do not look like feedback are left alone.
+- `notify` reads the digests of one day from `state/digests/` (`--date`, default today in UTC) and sends one short message to each channel under `notify.channels`: the date, the top `notify.top` finds of each mode (name, score, top reason) and a link to the portal (`site.url`, or the Pages URL of `site.repo` or `--repo`). `--dry-run` prints each channel's message and sends nothing. It exits 0 when no channel is configured or the day has no new finds, reports each channel as sent, skipped (its secret is not set) or failed, and exits 1 if any channel failed. Secrets come from the environment only; see [Notifications](configuration.md#notifications).
 - Both read `feedback.yml` next to the config (or `--feedback FILE`) when it exists.
 - `--mode` overrides `mode` from the config.
 - `--json` gives every reason with its points, plus the fork, kin and signal details, the detected language (`lang`, `lang_confidence`) and any star-farm evidence.

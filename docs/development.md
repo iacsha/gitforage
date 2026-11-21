@@ -24,7 +24,7 @@ Layout:
 packages/core    sources, scoring, state, sanitising, the GitHub client
 packages/cli     the gitforage command
 packages/site    static portal and Atom feed
-packages/notify  notifiers (coming)
+packages/notify  notifiers: ntfy, Telegram, webhooks
 template/        what a portal repo starts from: interests.yml, feedback.yml, workflows
 demo/            interests for the public field guide at gitforage.dev
 scripts/         release helpers (pin-template.ts)
