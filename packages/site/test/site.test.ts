@@ -655,3 +655,17 @@ describe("topic tags on cards", () => {
     expect(topicTags(many, many)).toHaveLength(12);
   });
 });
+
+describe("AI field notes", () => {
+  test("a hostile AI note renders inert and labelled; cards without one are unchanged", () => {
+    const files = renderSite(config(), [digest("discover", [
+      item("acme/noted", { ai_note: `<img src=x onerror=alert(9)> "quoted" note` }),
+      item("acme/plain"),
+    ])], { now: NOW });
+    const index = files.get("index.html")!;
+    expect(index).not.toContain("<img src=x");
+    expect(index).toContain("&lt;img src=x onerror=alert(9)&gt; &quot;quoted&quot; note");
+    expect(index.match(/class="note note-ai"/g)?.length).toBe(1);
+    expect(index).toContain('<span class="desc-label">AI field note</span>');
+  });
+});

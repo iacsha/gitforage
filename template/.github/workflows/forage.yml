@@ -66,6 +66,9 @@ jobs:
         env:
           # Read-only use: public search and repo data. Sent only to api.github.com.
           GITHUB_TOKEN: ${{ github.token }}
+          # Optional AI re-rank (llm in interests.yml). Unset secrets are empty: rules only.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           bun .gitforage-src/packages/cli/src/cli.ts run --config interests.yml --mode discover --out "$RUNNER_TEMP/discover.md"
           bun .gitforage-src/packages/cli/src/cli.ts run --config interests.yml --mode contribute --out "$RUNNER_TEMP/contribute.md"

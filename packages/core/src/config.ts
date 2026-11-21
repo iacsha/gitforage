@@ -56,7 +56,7 @@ export interface Config {
   filters: Filters;
   cadence: Cadence;
   digest_size: number;
-  llm: { provider: LlmProvider; model: string };
+  llm: { provider: LlmProvider; model: string; base_url: string; top: number; weight: number };
   /** discover (default) or contribute: picks the weight preset. */
   mode: Mode;
   /** The weights in effect: the mode's preset plus weight_overrides. */
@@ -170,6 +170,18 @@ export interface FeedbackConfig {
 
 export const DEFAULT_FEEDBACK: FeedbackConfig = { visitors: true, visitor_weight: 0.25, max_per_user: 3, min_account_age_days: 30 };
 const GOATCOUNTER_CODE_RE = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
+
+/** LLM endpoints: https, or plain http to this machine (local Ollama). No credentials in the URL. */
+function llmEndpointOk(u: string): boolean {
+  try {
+    const url = new URL(u);
+    if (url.username || url.password || url.search || url.hash) return false;
+    if (url.protocol === "https:") return true;
+    return url.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+  } catch {
+    return false;
+  }
+}
 
 /** A public https base URL with no credentials, query or fragment, normalised to end in /. */
 export function normaliseBaseUrl(v: string): string | null {
@@ -466,7 +478,7 @@ export function validateConfig(raw: unknown, source = "interests.yml"): Config {
   const digest_size = c.int(raw.digest_size, "digest_size", 20, 1, 200);
 
   const l = c.section(raw.llm, "llm");
-  c.unknownKeys(l, ["provider", "model"], "llm");
+  c.unknownKeys(l, ["provider", "model", "base_url", "top", "weight"], "llm");
   let provider: LlmProvider = "none";
   if (l.provider !== undefined && l.provider !== null) {
     if (!PROVIDERS.includes(l.provider as LlmProvider)) c.err("llm.provider", `must be one of ${PROVIDERS.join(", ")}`);
@@ -475,8 +487,16 @@ export function validateConfig(raw: unknown, source = "interests.yml"): Config {
   let model = "";
   if (l.model !== undefined && l.model !== null) {
     if (typeof l.model !== "string") c.err("llm.model", "must be text");
+    else if (l.model.length > 100 || /[\u0000-\u001f]/.test(l.model)) c.err("llm.model", "must be a model name (at most 100 characters)");
     else model = l.model;
   }
+  let base_url = "";
+  if (l.base_url !== undefined && l.base_url !== null && l.base_url !== "") {
+    if (typeof l.base_url !== "string" || !llmEndpointOk(l.base_url)) c.err("llm.base_url", "must be an https:// URL (or http:// to localhost) with no credentials");
+    else base_url = l.base_url;
+  }
+  const llm_top = c.int(l.top, "llm.top", 20, 1, 50);
+  const llm_weight = c.int(l.weight, "llm.weight", 4, 0, 20);
 
   let mode: Mode = "discover";
   if (raw.mode !== undefined && raw.mode !== null) {
@@ -587,7 +607,7 @@ export function validateConfig(raw: unknown, source = "interests.yml"): Config {
   if (c.problems.length) throw new ConfigError(source, c.problems);
   return {
     profile, topics, keywords, seeds, stars_from, exclude, filters, cadence, digest_size,
-    llm: { provider, model }, mode, weights: weightsFor(mode, weight_overrides), weight_overrides, limits, cache: { ttl_hours: ttl }, popularity, site, feedback, revival,
+    llm: { provider, model, base_url, top: llm_top, weight: llm_weight }, mode, weights: weightsFor(mode, weight_overrides), weight_overrides, limits, cache: { ttl_hours: ttl }, popularity, site, feedback, revival,
   };
 }
 

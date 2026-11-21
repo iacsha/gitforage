@@ -58,9 +58,11 @@ revival:                          # dead upstream, live fork: the Revivals tab (
   max_candidates: 10              # upstreams examined afresh per run; checks are reused for 28 days
   min_fork_stars: 5               # the fork needs this many stars (or 3 open issues of its own)
 
-llm:                              # coming; rules only for now
-  provider: none                  # none | anthropic | openai-compatible | ollama
-  model: ""
+llm:                              # optional AI re-rank of the top results (docs/configuration.md#ai-re-rank-optional)
+  provider: none                  # none | anthropic | openai-compatible | ollama; keys come from the environment only
+  model: ""                       # empty = the provider default
+  top: 20                         # how many of the rule-ranked top results the model judges
+  weight: 4                       # most points the model can add or take away
 
 # Optional tuning. Defaults are listed in the README.
 # weights:

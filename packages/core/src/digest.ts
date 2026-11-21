@@ -13,6 +13,7 @@ import { toJson } from "./report.ts";
 import { isLanguageCode } from "./language.ts";
 import { cleanText, isSafeFullName, repoUrl } from "./sanitize.ts";
 import type { Scored, SourceName } from "./types.ts";
+import { cleanNote } from "./llm.ts";
 
 export interface DigestItem {
   full_name: string;
@@ -31,6 +32,8 @@ export interface DigestItem {
   lang: string;
   /** Maintainer health, when the run fetched it (contribute mode). */
   health: { outside_prs_90d: number | null; issue_response: { answered: number; total: number } | null } | null;
+  /** The AI field note, when llm re-ranking ran and wrote one. */
+  ai_note?: string;
 }
 
 export interface Digest {
@@ -81,6 +84,7 @@ export function toDigestItems(items: Scored[]): DigestItem[] {
     health: j.signals && (j.signals.outside_prs_90d !== undefined || j.signals.issue_response !== undefined)
       ? { outside_prs_90d: j.signals.outside_prs_90d ?? null, issue_response: j.signals.issue_response ?? null }
       : null,
+    ...(j.ai_note ? { ai_note: j.ai_note } : {}),
   }));
 }
 
@@ -127,6 +131,7 @@ export function toDigestItem(v: unknown): DigestItem | string {
     pushed_at: iso(o.pushed_at),
     lang: isLanguageCode(o.lang) ? o.lang : "und",
     health,
+    ...(typeof o.ai_note === "string" && cleanNote(o.ai_note) ? { ai_note: cleanNote(o.ai_note) } : {}),
   };
 }
 

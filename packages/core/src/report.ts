@@ -25,6 +25,7 @@ export function toText(items: Scored[]): string {
     const r = s.candidate.repo;
     lines.push(`${String(i + 1).padStart(3)}. ${s.score.toFixed(1).padStart(5)}  ${r.full_name}  ★${r.stars}  [${sourceLabel(s)}]`);
     lines.push(`         ${cleanText(topReasons(s).join("; "), 400)}`);
+    if (s.candidate.ai_note) lines.push(`         AI field note: ${cleanText(s.candidate.ai_note, 200)}`);
     lines.push(`         ${url}`);
   });
   return lines.join("\n");
@@ -49,6 +50,7 @@ export function toMarkdown(items: Scored[], opts: { title?: string; date?: strin
     const r = s.candidate.repo;
     out.push(`## ${mdEscape(r.full_name)}`, "");
     if (r.description) out.push(mdEscape(r.description, 500), "");
+    if (s.candidate.ai_note) out.push(`*AI field note:* ${mdEscape(s.candidate.ai_note, 200)}`, "");
     out.push(`Score ${s.score.toFixed(1)}. ${mdEscape(r.language ?? "No language", 40)}. ${r.stars} stars. <${url}>`, "");
     for (const reason of s.reasons) out.push(`- ${reason.points > 0 ? "+" : ""}${reason.points} ${mdEscape(reason.text)}`);
     out.push("");
@@ -81,5 +83,6 @@ export function toJson(items: Scored[]) {
     lang_confidence: s.candidate.spoken?.confidence ?? 0,
     star_farm: s.candidate.star_farm ?? null,
     signals: s.candidate.signals ?? null,
+    ai_note: s.candidate.ai_note ? cleanText(s.candidate.ai_note, 200) : null,
   }));
 }

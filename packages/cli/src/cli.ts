@@ -9,7 +9,7 @@ import { dirname, join, resolve } from "node:path";
 import {
   ConfigError, GitHub, RateLimitError, forage, loadConfig, loadFeedback, loadSeen, loadStars, markSeen, saveSeen, saveStars,
   seenKeys, toJson, toMarkdown, toText, tokenFromEnv, withMode, MODES, type Config, type ForageResult, type Mode,
-  appendFeedback, loadRevival, saveRevival, revivalText, catalogTopics, cleanText, loadCatalog, saveCatalog, selectCatalog, toCatalogItems, type CatalogState, type RevivalItem, intake, issuesFrom, isSafeFullName, isSafeLogin, isoDate, loadDigests, replyFor, saveDigest, toDigestItems, toRepo,
+  appendFeedback, llmRerank, loadRevival, saveRevival, revivalText, catalogTopics, cleanText, loadCatalog, saveCatalog, selectCatalog, toCatalogItems, type CatalogState, type RevivalItem, intake, issuesFrom, isSafeFullName, isSafeLogin, isoDate, loadDigests, replyFor, saveDigest, toDigestItems, toRepo,
 } from "@gitforage/core";
 import { MAX_HAUL_NOTES_BYTES, parseHaulNotes, renderSite, siteBinaries, writeSite } from "@gitforage/site";
 
@@ -162,7 +162,6 @@ export async function main(argv: string[], env = process.env): Promise<number> {
   log(`mode: ${cfg.mode}`);
   if (args.cmd === "site") return site(args, cfg, base, log);
   if (args.cmd === "feedback") return feedback(args, cfg, base, env, log);
-  if (cfg.llm.provider !== "none") log(`llm.provider is ${cfg.llm.provider}, but LLM re-ranking is not built yet; using rules only`);
 
   const token = tokenFromEnv(env);
   if (!token) log("no GITHUB_TOKEN or GH_TOKEN set: limited to 60 requests an hour, expect a partial result");
@@ -194,11 +193,18 @@ export async function main(argv: string[], env = process.env): Promise<number> {
     if (e instanceof RateLimitError) { console.error(`gitforage: ${e.message}`); return 1; }
     throw e;
   }
+  let llmNote = "";
+  if (cfg.llm.provider !== "none") {
+    const cacheDir = args.noCache ? null : join(resolve(args.cacheDir ?? join(base, ".gitforage", "cache")), "llm");
+    const r = await llmRerank(res.ranked, cfg, { env, cacheDir, log });
+    res.warnings.push(...r.warnings);
+    if (r.applied) llmNote = ` The top ${cfg.llm.top} were also judged by an AI model (llm.provider ${cfg.llm.provider}); its fit counts at most ${cfg.llm.weight} points either way.`;
+  }
   const items = res.ranked.slice(0, args.limit ?? cfg.digest_size);
   for (const w of res.warnings) console.error(`warning: ${w}`);
   if (args.debug) for (const e of res.excluded) console.error(`dropped ${e.full_name}: ${cleanText(e.reason, 300)}`);
 
-  const note = `Mode: ${cfg.mode}. Scores are rule-based; each line lists its reasons.`;
+  const note = `Mode: ${cfg.mode}. Scores are rule-based; each line lists its reasons.${llmNote}`;
   const rendered = () => (args.json ? JSON.stringify(toJson(items), null, 2) + "\n" : toMarkdown(items, { note }));
   if (args.cmd === "preview") {
     if (args.out) { writeFileSync(args.out, rendered()); log(`wrote ${args.out}`); }

@@ -53,6 +53,8 @@ export interface Candidate {
   spoken?: LanguageGuess;
   /** Set when the stars look inflated for the repo's real activity (starfarm.ts). */
   star_farm?: StarFarmCheck;
+  /** One-sentence AI field note from the optional LLM re-rank (llm.ts). Cleaned; still escape it. */
+  ai_note?: string;
 }
 
 /**

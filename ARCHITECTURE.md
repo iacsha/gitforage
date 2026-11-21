@@ -67,7 +67,7 @@ issue "keep: owner/name" ──> feedback job (contents: write, issues: write)
 - **Popularity within topic:** stars and stars a month count as a percentile among the candidates that share an interest, so a niche leader is not drowned by big generic repos.
 - **Language and star farms:** each candidate's description language is detected without a dependency, and `filters.spoken_languages` drops other languages. Repos whose stars are implausible for their forks, issues, contributors and age lose points or are dropped.
 - **Feedback:** Keep/Skip marks in `feedback.yml` nudge per-topic, per-owner and per-language weights, and a skipped repo is never shown again.
-- **LLM** (optional, coming): re-ranks the top results against a plain-English profile. It works with an Anthropic key, any OpenAI-compatible endpoint, or local Ollama. Without one, gitforage is rules only.
+- **LLM** (optional): judges the top `llm.top` results against your plain-English `profile`, adding at most `llm.weight` points either way plus a one-sentence "AI field note". It works with an Anthropic key, any OpenAI-compatible endpoint, or local Ollama, and any failure leaves the rule ranking unchanged. Without one, gitforage is rules only.
 
 ## Security
 
@@ -80,6 +80,6 @@ All text from GitHub is untrusted. Names are validated, text is escaped, and the
 3. Template repo, portal, Atom feed, feedback (done).
    - 3.5 Customizable layout (done): Comfortable, Compact and List densities, card field switches, sort (score, newest, stars, rising) and source and topic filter chips, with defaults from `site.layout`.
    - 3.6 Personalize in the browser (done): a topic catalog with groups and starter packs, re-ranked in the visitor's browser; "Use my GitHub stars" (the visitor's browser asks GitHub directly); local Keep and Skip; shareable `?t=` links; GoatCounter pick events when analytics are on. The default view and the JavaScript-off page are unchanged.
-4. Optional LLM re-rank and notifiers.
+4. Optional LLM re-rank (done) and notifiers.
 5. Public v0.1 with a demo portal.
 6. Later: GitLab and Codeberg sources, and a hosted version.

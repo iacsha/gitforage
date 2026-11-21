@@ -23,8 +23,11 @@ See [`interests.example.yml`](../interests.example.yml). You need at least one o
 | `mode` | `discover` | `discover` to find useful tools, `contribute` to find projects to contribute to. Picks the weight preset. |
 | `cadence` | `weekly` | `daily`, `weekly` or `monthly`. Stored only: the template workflow runs weekly, and you change its `cron` line to change that. |
 | `digest_size` | `20` | Items per list, unless `--limit` is given. |
-| `llm.provider` | `none` | `none`, `anthropic`, `openai-compatible` or `ollama`. Validated, but the re-rank is not built yet, so it is ignored. |
-| `llm.model` | `""` | Model name for the LLM re-rank (coming). |
+| `llm.provider` | `none` | `none`, `anthropic`, `openai-compatible` or `ollama`. See [AI re-rank](#ai-re-rank-optional). |
+| `llm.model` | per provider | `claude-opus-5-5` for `anthropic`, `llama3.1` for `ollama`; required for `openai-compatible`. |
+| `llm.base_url` | `""` | Endpoint for `openai-compatible` (required) or `ollama` (default `http://localhost:11434`). `https://`, or `http://` to localhost only. |
+| `llm.top` | `20` | How many of the rule-ranked top results the model judges (1 to 50). |
+| `llm.weight` | `4` | Most points the model can add or take away (0 to 20). `0` keeps the notes but leaves the ranking alone. |
 | `weights.*` | per mode | Override any scoring weight. See below. |
 | `limits.*` | see below | API sampling caps. |
 | `cache.ttl_hours` | `12` | How long cached API responses are reused. `0` turns the cache off. |
@@ -71,3 +74,17 @@ Archived and disabled repos are always dropped, as are your seeds and the repos 
 | `rising_push_days` | 30 | Rising repos must have been pushed within this many days. |
 | `stars_from_max_pages` | 3 | Pages of 100 read from `stars_from`. |
 | `signals_top` | 15 | Activity signals are fetched for this many top candidates only. |
+
+## AI re-rank (optional)
+
+Rules always run first. With `llm.provider` set, gitforage then sends the top `llm.top` results (name, description, topics, language, stars and their top reasons) plus your `profile` to the model, and asks for a fit from 0 to 10 and a one-sentence field note for each. A fit adds `weight x (fit - 5) / 5` points, so the model can move a repo by at most `llm.weight` either way, and the reason line says so ("AI fit 8/10"). The note appears on the card labelled **AI field note**, beside the rule-written note.
+
+| Provider | Key (environment only) | Notes |
+|---|---|---|
+| `anthropic` | `ANTHROPIC_API_KEY` | Messages API with structured JSON output, low effort. Set `llm.model` to `claude-haiku-5-5` for the cheapest run. |
+| `openai-compatible` | `OPENAI_API_KEY` (optional) | Any `/chat/completions` endpoint at `llm.base_url`. |
+| `ollama` | none | Local Ollama at `llm.base_url`. |
+
+Keys are never read from `interests.yml`. In the template workflow, add the key as a repository secret with the same name; without it the run stays rules-only. Answers are cached for 7 days next to the API cache, so a rerun costs nothing. Any failure (no key, a network error, a reply that is not the expected JSON, a refusal) is a warning, and the rule ranking stands.
+
+The model only ever sees public repo data and your profile text. Repo text is passed as a quoted data block and the model is told not to follow instructions in it. Its reply is validated (known ids, a 0 to 10 fit), and the note is cleaned, stripped of URLs, capped at 200 characters and escaped like any other repo text. A prompt injection in a README can at worst move that one repo by `llm.weight` points and give it an odd note.
