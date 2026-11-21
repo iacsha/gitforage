@@ -24,3 +24,4 @@ export * from "./intake.ts";
 export * from "./catalog.ts";
 export * from "./revival.ts";
 export * from "./llm.ts";
+export * from "./earlyfinds.ts";

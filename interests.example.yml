@@ -58,6 +58,10 @@ revival:                          # dead upstream, live fork: the Revivals tab (
   max_candidates: 10              # upstreams examined afresh per run; checks are reused for 28 days
   min_fork_stars: 5               # the fork needs this many stars (or 3 open issues of its own)
 
+early_finds:                      # the live record behind the Found early page (early-finds/)
+  enabled: false                  # daily workflow: Trending, HN front page, star milestones; up to 400 API calls a day
+
+
 llm:                              # optional AI re-rank of the top results (docs/configuration.md#ai-re-rank-optional)
   provider: none                  # none | anthropic | openai-compatible | ollama; keys come from the environment only
   model: ""                       # empty = the provider default

@@ -9,6 +9,7 @@
 - **Topics:** a page per topic in `interests.yml`, with everything listed for it so far. With [personalization](#pick-your-topics) on, the page is grouped like the picker (`catalog.groups`, in config order), each topic with its count of finds, and every catalog topic with finds gets a page too (digest listings first, then the latest catalog's finds). Topics with nothing found yet are listed once, quietly, at the end.
 - **Archive:** every past digest.
 - **About:** what the portal looks for, how scoring works (with this portal's actual weights), how Keep and Skip work, and how to run your own.
+- **Found early** (`early-finds/`, with `early_finds.enabled`): the live record of finds this portal showed before they reached GitHub Trending, the Hacker News front page or a star milestone. See [Found early](#found-early).
 - **`feed.xml`:** an Atom 1.0 feed with an entry per listed repo.
 
 Each card shows the repo (linked to GitHub), its description, a source badge (**New**, **Rising**, **Live fork** or **Like your stars**), the top scoring reasons as chips, its topics (the portal's own topics first, filled, with a check mark and "matches your patch" for screen readers; with a visitor's picks, their topics instead; the rest as quiet outlines), stars, language and last push, and Keep and Skip buttons. Keys: `j` and `k` move between cards, `Enter` opens one.
@@ -83,6 +84,22 @@ The catalog is the groups' topics, `catalog.topics` and your own `topics` (at mo
 **Saved in the browser:** `gitforage-picks` (the topics and pack), `gitforage-marks` (repo, mark, and the repo's topics and language, at most 500) and `gitforage-stars` (topic weights and a date, kept 30 days). Each is schema-checked when read and dropped when it does not fit.
 
 **API budget.** The extra cost is two searches per extra catalog topic, all on the search limit (30 a minute, including for the Actions `GITHUB_TOKEN`), plus nothing on the core limit. The demo's 96 topics (80 beyond its own) add 160 searches. Measured on 2026-11-20 with a cold cache and the Actions-sized `GITHUB_TOKEN` limits: a full discover run took 364 API requests and about 8 minutes (123 s of that waiting for the search limit), and the contribute run after it 101 requests (166 answered from cache) and under a minute, so about 465 requests and 9 minutes for a week. That is far inside a scheduled run's limits, so the whole catalog is foraged every week and no topic rotation is needed. It scored 1,908 catalog candidates, kept 1,363 (25 per topic), and `catalog.json` came to 0.91 MB raw and 0.19 MB gzipped. Each extra topic adds two searches, about 4 seconds at the search limit.
+
+## Found early
+
+The Backtest page is a simulation: it replays the rules on past weeks. Found early is the live record of what this portal actually showed, and the two are kept apart (each links to the other, and nothing simulated is counted on the live page).
+
+With `early_finds.enabled`, the daily `early-finds` workflow runs `gitforage early-finds`, which keeps `state/early-finds.json`. For every repo in `state/seen.json` it records when the portal first showed it, and then watches for three signals:
+
+- **GitHub Trending:** the daily, all-languages Trending page, read once a day. The first day a tracked repo is on it is kept.
+- **The Hacker News front page:** front-page stories of the last two days from the Algolia HN API, matched on a `github.com/<owner>/<repo>` link. The first such story (date, id, points) is kept.
+- **Star milestones:** 1,000, 5,000, 10,000, 25,000 and 50,000 stars. Each repo is looked up at most once every six days, and at most 400 a day, least recently checked first. The first lookup records the stars at first check, and a milestone counts only if it is crossed after that.
+
+The lead is the days from the day a repo was first shown to the day of the signal. Only a lead of at least one day counts, and only for a signal after the first day the ledger watched the repo, so a repo that was already trending, already on the front page or already past a milestone when it was shown is never counted as an early find.
+
+The page is built when the ledger has at least one repo. It shows a headline ("N finds later reached GitHub Trending, the Hacker News front page or a star milestone, a median of X days after gitforage first showed them"), a table of finds sorted by lead (repo, first shown, what it reached first and anything after, the date and the lead in days) and a short note on the method: when tracking began, what is checked and how often, and what is not counted. With no qualifying finds yet it says "Tracking since <date>, nothing has reached Trending yet". It is linked from every footer, the About page and the Backtest page. The page is rebuilt with the rest of the portal by the weekly forage run.
+
+To move an existing ledger from the early prototype logger, `bun scripts/import-early-finds.ts <old ledger.json> state/early-finds.json` converts and validates it.
 
 # Keep and Skip
 

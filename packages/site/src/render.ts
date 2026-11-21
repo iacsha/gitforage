@@ -31,6 +31,8 @@ export interface SiteContext {
   baseUrl: string | null;
   /** Build time, shown as "Updated". */
   updated: string;
+  /** The Found early page (early-finds/) is built, so pages link to it. */
+  earlyFinds?: boolean;
 }
 
 const MODE_TITLE: Record<Mode, string> = { discover: STRINGS.discoverTitle, contribute: STRINGS.contributeTitle };
@@ -191,7 +193,7 @@ ${o.body}
 </main>
 <footer class="site-foot">
 <div class="wrap">
-<p class="foot-stamp">Field guide updated <time datetime="${ctx.updated}">${fmtDate(ctx.updated)}</time> · <a href="${href(`${o.root}feed.xml`)}">Atom feed</a> · <a href="${href(`${o.root}haul/index.html`)}">The Haul</a> · <a href="${href(`${o.root}about.html`)}">How scoring works</a> · <a href="${href(`${o.root}backtest.html`)}">Backtest (simulated)</a></p>
+<p class="foot-stamp">Field guide updated <time datetime="${ctx.updated}">${fmtDate(ctx.updated)}</time> · <a href="${href(`${o.root}feed.xml`)}">Atom feed</a> · <a href="${href(`${o.root}haul/index.html`)}">The Haul</a> · <a href="${href(`${o.root}about.html`)}">How scoring works</a> · <a href="${href(`${o.root}backtest.html`)}">Backtest (simulated)</a>${ctx.earlyFinds ? html` · <a href="${href(`${o.root}early-finds/index.html`)}">Found early</a>` : ""}</p>
 <p><a href="${href(RUN_YOUR_OWN_URL)}">Run your own gitforage</a> · <span class="keys">Keys: <kbd>j</kbd> and <kbd>k</kbd> move between cards, <kbd>Enter</kbd> opens one.</span></p>
 </div>
 </footer>
@@ -725,7 +727,7 @@ ${languageLine(cfg)}
 <p>The field note under the name is written by plain rules from the numbers gitforage measured: age, language, patch, how it was found and how its maintainers answer. It never borrows from the repo's own text. That text sits just below, in the maintainer's words, exactly as they wrote it. When this portal also asks an AI model (the optional <code>llm</code> setting), a card can carry an <em>AI field note</em>, labelled as such. The model writes it from the repo's own text, so treat it as a second opinion that can be wrong.</p>
 <h2>How scoring works</h2>
 <p>Each rule adds points and a reason, and the score is the sum. The reasons are the tags on every card. Popularity is ranked within each topic and capped, so a small project that leads its niche can beat a big generic one. There is no machine learning and no paid placement: nothing here is sponsored.</p>
-<p>Ranking by fit is not the same as predicting what will trend. The <a href="${href("backtest.html")}">backtest (simulated)</a> replays these rules on 26 past weeks and reports both what they caught early and what they missed.</p>
+<p>Ranking by fit is not the same as predicting what will trend. The <a href="${href("backtest.html")}">backtest (simulated)</a> replays these rules on 26 past weeks and reports both what they caught early and what they missed.${ctx.earlyFinds ? html` <a href="${href("early-finds/index.html")}">Found early</a> is the live record: finds this portal actually showed that later reached Trending, the Hacker News front page or a star milestone.` : ""}</p>
 <p><strong>Discover</strong> ranks useful tools on fit, adoption, activity, releases and license. <strong>Get involved</strong> also weighs maintainers who merge outside pull requests and answer issues, starter issues, and wild forks.</p>
 <div class="table-wrap">
 <table>

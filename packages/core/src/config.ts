@@ -73,6 +73,8 @@ export interface Config {
   revival: RevivalConfig;
   /** Push notifications after a run (packages/notify). Secrets come from the environment only. */
   notify: NotifyConfig;
+  /** The early-finds ledger and its Found early page (earlyfinds.ts). */
+  early_finds: { enabled: boolean };
 }
 
 export interface RevivalConfig {
@@ -227,7 +229,7 @@ export class ConfigError extends Error {
 
 const TOP_KEYS = [
   "profile", "topics", "keywords", "seeds", "stars_from", "exclude", "filters",
-  "cadence", "digest_size", "llm", "mode", "weights", "limits", "cache", "popularity", "site", "feedback", "revival", "notify",
+  "cadence", "digest_size", "llm", "mode", "weights", "limits", "cache", "popularity", "site", "feedback", "revival", "notify", "early_finds",
 ];
 const CADENCES: Cadence[] = ["daily", "weekly", "monthly"];
 const PROVIDERS: LlmProvider[] = ["none", "anthropic", "openai-compatible", "ollama"];
@@ -607,11 +609,14 @@ export function validateConfig(raw: unknown, source = "interests.yml"): Config {
   if (revival.enabled && topics.length === 0) c.err("revival.enabled", "the revival radar searches your topics, so it needs topics");
 
   const notify = notifySection(c, raw.notify);
+  const ef = c.section(raw.early_finds, "early_finds");
+  c.unknownKeys(ef, ["enabled"], "early_finds");
+  const early_finds = { enabled: c.bool(ef.enabled, "early_finds.enabled", false) };
 
   if (c.problems.length) throw new ConfigError(source, c.problems);
   return {
     profile, topics, keywords, seeds, stars_from, exclude, filters, cadence, digest_size,
-    llm: { provider, model, base_url, top: llm_top, weight: llm_weight }, mode, weights: weightsFor(mode, weight_overrides), weight_overrides, limits, cache: { ttl_hours: ttl }, popularity, site, feedback, revival, notify,
+    llm: { provider, model, base_url, top: llm_top, weight: llm_weight }, mode, weights: weightsFor(mode, weight_overrides), weight_overrides, limits, cache: { ttl_hours: ttl }, popularity, site, feedback, revival, notify, early_finds,
   };
 }
 

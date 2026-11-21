@@ -13,6 +13,7 @@ import {
 } from "@gitforage/core";
 import { MAX_HAUL_NOTES_BYTES, pagesUrl, parseHaulNotes, renderSite, siteBinaries, writeSite } from "@gitforage/site";
 import { buildSummary, notify as sendNotifications } from "@gitforage/notify";
+import { earlyFindsCommand, earlyFindsForSite } from "./earlyfinds.ts";
 
 const HELP = `gitforage: personalized GitHub discovery
 
@@ -22,6 +23,7 @@ Usage:
   gitforage site    [--config interests.yml] --out DIR [--repo owner/name] [--state state/seen.json]
   gitforage feedback [--config interests.yml] [--event FILE] [--issues FILE] [--replies DIR] [--json]
   gitforage notify  [--config interests.yml] [--state state/seen.json] [--date YYYY-MM-DD] [--repo owner/name] [--dry-run]
+  gitforage early-finds [--config interests.yml] [--state state/seen.json]
 
 Options:
   --config FILE   interests file (default: ./interests.yml)
@@ -30,7 +32,7 @@ Options:
   --limit N       how many items to show (default: digest_size from the config)
   --json          print JSON instead of text or markdown
   --out FILE      write markdown (or JSON with --json) to FILE instead of stdout
-  --state FILE    run only: seen-state file (default: state/seen.json next to the config).
+  --state FILE    run, notify, early-finds: seen-state file (default: state/seen.json next to the config).
                   Star counts for growth are kept beside it in stars.json (read by
                   preview, written by run)
   --feedback FILE Keep/Skip marks (default: feedback.yml next to the config, if present)
@@ -159,7 +161,7 @@ export async function main(argv: string[], env = process.env): Promise<number> {
     return 2;
   }
   if (args.cmd === "help") { console.log(HELP); return 0; }
-  if (!["preview", "run", "site", "feedback", "notify"].includes(args.cmd)) {
+  if (!["preview", "run", "site", "feedback", "notify", "early-finds"].includes(args.cmd)) {
     console.error(`gitforage: unknown command "${args.cmd}"\n\n${HELP}`);
     return 2;
   }
@@ -178,6 +180,7 @@ export async function main(argv: string[], env = process.env): Promise<number> {
   if (args.cmd === "site") return site(args, cfg, base, log);
   if (args.cmd === "feedback") return feedback(args, cfg, base, env, log);
   if (args.cmd === "notify") return notify(args, cfg, base, env, log);
+  if (args.cmd === "early-finds") return earlyFindsCommand(args, cfg, base, env, log);
 
   const token = tokenFromEnv(env);
   if (!token) log("no GITHUB_TOKEN or GH_TOKEN set: limited to 60 requests an hour, expect a partial result");
@@ -269,7 +272,7 @@ function site(args: Args, cfg: Config, base: string, log: (m: string) => void): 
     if (loaded.problems.length) console.error(`warning: ${loaded.problems.length} revival problems, first: ${loaded.problems[0]}`);
     revival = loaded.state.items;
   }
-  const files = renderSite(cfg, digests, { repo: args.repo ?? null, catalog, revival, haulNotes: loadHaulNotes(join(base, "haul.txt")) });
+  const files = renderSite(cfg, digests, { repo: args.repo ?? null, catalog, revival, haulNotes: loadHaulNotes(join(base, "haul.txt")), earlyFinds: earlyFindsForSite(cfg, stateDir(args, base)) });
   const n = writeSite(args.out, new Map<string, string | Uint8Array>([...files, ...siteBinaries()]));
   log(`site: ${digests.length} digests, wrote ${n} files to ${args.out}`);
   return 0;

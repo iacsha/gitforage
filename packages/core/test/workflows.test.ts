@@ -17,7 +17,8 @@ const steps = (wf: any) => Object.values(wf.jobs as Record<string, any>).flatMap
 describe("workflows", () => {
   test("there are workflows to check", () => {
     expect(files.map((f) => f.slice(root.length + 1)).sort()).toEqual([
-      ".github/workflows/ci.yml", ".github/workflows/codeql.yml", "template/.github/workflows/feedback.yml", "template/.github/workflows/forage.yml",
+      ".github/workflows/ci.yml", ".github/workflows/codeql.yml", "template/.github/workflows/early-finds.yml", "template/.github/workflows/feedback.yml",
+      "template/.github/workflows/forage.yml",
     ]);
   });
 
@@ -72,11 +73,25 @@ describe("workflows", () => {
     for (const s of steps(wf)) for (const v of Object.values(s.env ?? {})) expect(String(v)).not.toMatch(/github\.event\.(issue|comment)/);
   });
 
-  test("template: both workflows pin the same gitforage commit; the release script replaces the placeholder", () => {
-    const shas = ["forage.yml", "feedback.yml"].map((f) => load(join(root, "template", ".github", "workflows", f)).wf.env.GITFORAGE_SHA);
-    // Both workflows run the same gitforage commit: the placeholder on main before a
+  test("template: early-finds runs daily, can only write contents, and commits only its ledger", () => {
+    const { wf } = load(join(root, "template", ".github", "workflows", "early-finds.yml"));
+    expect(wf.permissions).toEqual({});
+    expect(Object.keys(wf.jobs)).toEqual(["early-finds"]);
+    expect(wf.jobs["early-finds"].permissions).toEqual({ contents: "write" });
+    expect(Object.keys(wf.on).sort()).toEqual(["schedule", "workflow_dispatch"]);
+    expect(wf.on.schedule[0].cron).toMatch(/^\d+ \d+ \* \* \*$/);
+    expect(wf.concurrency).toEqual({ group: "gitforage-early-finds", "cancel-in-progress": false });
+    const runs = steps(wf).map((s: any) => String(s.run ?? "")).join("\n");
+    expect(runs).toContain("cli.ts early-finds --config interests.yml");
+    expect([...runs.matchAll(/git add (.+)/g)].map((m) => m[1])).toEqual(["state/early-finds.json"]);
+  });
+
+  test("template: every workflow pins the same gitforage commit; the release script replaces the placeholder", () => {
+    const shas = ["forage.yml", "feedback.yml", "early-finds.yml"].map((f) => load(join(root, "template", ".github", "workflows", f)).wf.env.GITFORAGE_SHA);
+    // The workflows run the same gitforage commit: the placeholder on main before a
     // release, or a real full SHA once scripts/pin-template.ts has pinned it.
     expect(shas[0]).toBe(shas[1]);
+    expect(shas[2]).toBe(shas[0]);
     expect(shas[0]).toMatch(/^[0-9a-f]{40}$/);
     const text = readFileSync(join(root, "template", ".github", "workflows", "forage.yml"), "utf8");
     const sha = "0123456789abcdef0123456789abcdef01234567";
