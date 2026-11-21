@@ -11,6 +11,7 @@ import { localMarks, personalBar, personalList, pickDialog } from "./personalize
 import { REVIVAL_NOTE, SOURCE_LABELS, STRINGS } from "../assets/strings.js";
 import { ringShapes, ringSpec, ringWords } from "../assets/rings.js";
 import { fieldNote, noteHash } from "../assets/fieldnote.js";
+import { topicTags } from "../assets/personalize-core.js";
 
 /** The project's own repo, for "Run your own gitforage" and the About page. */
 export const PROJECT_URL = "https://github.com/iacsha/gitforage";
@@ -393,6 +394,19 @@ export function ringSvg(spec: ReturnType<typeof ringSpec>): Html {
 
 const pad3 = (n: number) => numAttr(n).padStart(3, "0");
 
+/**
+ * The topic tags on a card. Topics in the patch (the portal's own topics here; the
+ * visitor's picks when personalize.js draws the card) come first and are marked three
+ * ways: a filled tag, a check mark, and words for screen readers, so colour is never
+ * the only signal. Both marks are always present and hidden on other tags, so the
+ * browser re-marks a tag by toggling the class and the hidden flags only.
+ */
+export function topicTagList(topics: string[], selected: string[]): Html {
+  const tags = topicTags(topics, selected);
+  if (!tags.length) return trusted("");
+  return html`<ul class="tags" aria-label="${STRINGS.cardTopics}">${tags.map((t) => html`<li class="${t.match ? "tag tag-match" : "tag"}"><span class="tag-mark" aria-hidden="true"${t.match ? "" : trusted(" hidden")}>✓</span>${t.topic}<span class="sr-only"${t.match ? "" : trusted(" hidden")}>, ${STRINGS.topicMatch}</span></li>`)}</ul>`;
+}
+
 export function card(ctx: SiteContext, it: DigestItem, o: { health: boolean; found?: string; rank?: number; topics?: string[]; local?: boolean }): Html {
   const url = repoUrl(it.full_name);
   if (!url) return trusted("");
@@ -429,6 +443,7 @@ ${ringSvg(spec)}
 <p class="note">${note}</p>
 ${it.description ? html`<p class="desc"><span class="desc-label">${STRINGS.maintainerWords}</span> ${it.description}</p>` : html`<p class="desc desc-none">${STRINGS.noDescription}</p>`}
 ${chips.length ? html`<ul class="chips" aria-label="${STRINGS.whyHere}">${chips.map((r) => html`<li>${r.text}</li>`)}</ul>` : ""}
+${topicTagList(itemTopics(it), ctx.cfg.topics)}
 <ul class="meta">
 <li class="meta-stars">${plural(it.stars, "star")}</li>
 ${pushed ? html`<li class="meta-pushed">${STRINGS.pushed} <time datetime="${it.pushed_at}">${pushed}</time></li>` : ""}

@@ -623,3 +623,23 @@ export function isOwnBlobUrl(v, origin) {
   return typeof v === "string" && typeof origin === "string" && /^https?:\/\/[A-Za-z0-9.-]+(?::\d{1,5})?$/.test(origin) &&
     v.startsWith("blob:" + origin + "/") && /^[0-9a-fA-F-]{36}$/.test(v.slice(("blob:" + origin + "/").length));
 }
+
+// ---- Topic tags on a card -------------------------------------------------------------
+
+/** Most topic tags shown on one card. */
+export const MAX_CARD_TAGS = 8;
+
+/**
+ * The topic tags for a card: strict slugs only, each once, the ones in the patch first
+ * (marked), then the others, at most `max`. The server and the browser both use this,
+ * so a card marks the same topics whichever drew it.
+ * @param {unknown} topics @param {Iterable<string>} selected @param {number} [max]
+ * @returns {{ topic: string, match: boolean }[]}
+ */
+export function topicTags(topics, selected, max = MAX_CARD_TAGS) {
+  const want = new Set(selected);
+  const list = strings(topics, isTopic, 40);
+  const hits = list.filter((t) => want.has(t));
+  const rest = list.filter((t) => !want.has(t));
+  return [...hits.map((t) => ({ topic: t, match: true })), ...rest.map((t) => ({ topic: t, match: false }))].slice(0, Math.max(hits.length, max));
+}

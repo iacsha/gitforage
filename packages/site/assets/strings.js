@@ -67,6 +67,8 @@ export const STRINGS = Object.freeze({
   maintainers: "Tended by",
   moreLikeThis: "More like this",
   hide: "Hide",
+  cardTopics: "Topics on the label",
+  topicMatch: "matches your patch",
 
   // Lists, filters and the map
   sourceFilter: "Source",

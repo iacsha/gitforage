@@ -3,6 +3,7 @@ import { mkdtempSync, readFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseDigest, validateConfig, withMode, type Digest, type DigestItem } from "@gitforage/core";
+import { topicTags } from "../assets/personalize-core.js";
 import {
   MAX_TOPIC_CHIPS, RULE_DESCRIPTIONS, atomFeed, chipTopics, csp, esc, feedbackUrl, href, html, momentum, numAttr, pagesUrl, renderSite, sortItems, stripUnsafe, trusted, writeSite, xmlEscape,
 } from "../src/index.ts";
@@ -507,7 +508,10 @@ describe("layout: density, fields, sort and filters", () => {
     const index = build().get("index.html")!;
     expect(index).toContain('data-sources="search rising" data-topics="hl7"');
     expect(index).toContain('data-sources="search" data-topics="hl7"');
-    expect(index).not.toContain("mllp");
+    // mllp is not a config topic: no filter chip, not in data-topics, only a quiet tag on its card.
+    expect(index).not.toContain('data-value="mllp"');
+    expect(index).not.toMatch(/data-topics="[^"]*mllp/);
+    expect(index).toContain('<li class="tag"><span class="tag-mark" aria-hidden="true" hidden>✓</span>mllp<span class="sr-only" hidden>, matches your patch</span></li>');
     const bare = validateConfig({ seeds: ["a/b"] });
     const many = [item("x/1", { topics: ["cli", "rust"] }), item("x/2", { topics: ["cli"] }), item("x/3", { topics: ["rust", "cli", "solo"] })];
     expect(chipTopics(bare, many)).toEqual(["cli", "rust"]);
@@ -602,4 +606,52 @@ describe("layout: density, fields, sort and filters", () => {
       expect(index.slice(index.indexOf("<main"), index.indexOf("</main>"))).toMatchSnapshot();
     });
   }
+});
+
+describe("topic tags on cards", () => {
+  const digestWith = (items: DigestItem[]): Digest => ({ version: 1, date: "2026-11-22", mode: "discover", generated_at: "2026-11-22T06:00:00.000Z", items });
+  const one = (o: Partial<DigestItem>): DigestItem => ({
+    full_name: "a/tagged", url: "https://github.com/a/tagged", score: 5, stars: 10, language: "Go", description: "A tool", sources: ["search"],
+    reasons: [], topics: [], via_topics: [], created_at: "2026-10-01T00:00:00.000Z", pushed_at: "2026-11-20T00:00:00.000Z", lang: "en", health: null, ...o,
+  });
+
+  test("the server marks the portal's topics three ways, first, and leaves the others quiet", () => {
+    const cfg = validateConfig({ topics: ["hl7", "fhir"] });
+    const html = renderSite(cfg, [digestWith([one({ topics: ["zeta", "fhir", "alpha"], via_topics: ["hl7"] })])], { now: "2026-11-22T12:00:00.000Z" }).get("index.html")!;
+    const tags = html.match(/<ul class="tags" aria-label="Topics on the label">(.*?)<\/ul>/)![1];
+    const items = [...tags.matchAll(/<li class="([^"]+)">(.*?)<\/li>/g)].map((m) => [m[1], m[2].replace(/<[^>]+>/g, "|")]);
+    expect(items).toEqual([
+      ["tag tag-match", "|✓|fhir|, matches your patch|"],
+      ["tag tag-match", "|✓|hl7|, matches your patch|"],
+      ["tag", "|✓|zeta|, matches your patch|"],
+      ["tag", "|✓|alpha|, matches your patch|"],
+    ]);
+    // Non-matching tags keep both marks, hidden, so the browser only toggles.
+    expect(tags).toContain('<li class="tag"><span class="tag-mark" aria-hidden="true" hidden>✓</span>zeta<span class="sr-only" hidden>');
+    expect(tags).not.toContain('class="tag tag-match"><span class="tag-mark" aria-hidden="true" hidden');
+  });
+
+  test("hostile topics never become tags, and long lists are capped", () => {
+    const cfg = validateConfig({ topics: ["hl7"] });
+    const many = Array.from({ length: 20 }, (_, i) => `t${i}`);
+    const html = renderSite(cfg, [digestWith([one({ topics: ["<img src=x>", "Bad", ...many, "hl7"] })])], { now: "2026-11-22T12:00:00.000Z" }).get("index.html")!;
+    const tags = html.match(/<ul class="tags"[^>]*>(.*?)<\/ul>/)![1];
+    expect(tags).not.toContain("img");
+    expect(tags).not.toContain("Bad");
+    expect([...tags.matchAll(/<li /g)].length).toBe(8);
+    expect(tags.startsWith('<li class="tag tag-match">')).toBe(true);
+  });
+
+  test("the browser core picks and orders tags the same way", () => {
+    expect(topicTags(["zeta", "fhir", "alpha", "hl7", "fhir"], ["hl7", "fhir"])).toEqual([
+      { topic: "fhir", match: true }, { topic: "hl7", match: true }, { topic: "zeta", match: false }, { topic: "alpha", match: false },
+    ]);
+    expect(topicTags(["<b>", "Bad", 3 as unknown as string, "ok"], [])).toEqual([{ topic: "ok", match: false }]);
+    expect(topicTags("hl7" as unknown as string[], ["hl7"])).toEqual([]);
+    const many = Array.from({ length: 12 }, (_, i) => `t${i}`);
+    expect(topicTags(many, [])).toHaveLength(8);
+    // Matches are never cut, even past the cap.
+    expect(topicTags(many, many).every((t) => t.match)).toBe(true);
+    expect(topicTags(many, many)).toHaveLength(12);
+  });
 });

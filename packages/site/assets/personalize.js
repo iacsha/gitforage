@@ -280,6 +280,8 @@ function init() {
       for (const c of chips) ul.appendChild(el("li", null, c.text));
       art.appendChild(ul);
     }
+    const tags = topicTagList(it.topics, applied.topics);
+    if (tags) art.appendChild(tags);
     const meta = el("ul", { class: "meta" });
     meta.appendChild(el("li", { class: "meta-stars" }, plural(it.stars, "star")));
     const pushed = core.formatDate(it.pushed_at);
@@ -306,6 +308,31 @@ function init() {
     li.appendChild(art);
     paintMarks(li);
     return li;
+  }
+
+  /**
+   * The topic tags on a card, built like the server's: every tag carries the check
+   * mark and the "matches your patch" words, hidden unless it matches, and
+   * paintTag marks or unmarks one by toggling the class and those hidden flags.
+   */
+  function topicTagList(topics, selected) {
+    const tags = core.topicTags(topics, selected);
+    if (!tags.length) return null;
+    const ul = el("ul", { class: "tags", "aria-label": STRINGS.cardTopics });
+    for (const t of tags) {
+      const li = el("li", { class: "tag" });
+      li.appendChild(el("span", { class: "tag-mark", "aria-hidden": "true" }, "✓"));
+      li.appendChild(document.createTextNode(t.topic));
+      li.appendChild(el("span", { class: "sr-only" }, ", " + STRINGS.topicMatch));
+      paintTag(li, t.match);
+      ul.appendChild(li);
+    }
+    return ul;
+  }
+
+  function paintTag(li, match) {
+    li.classList.toggle("tag-match", match);
+    for (const s of all(".tag-mark, .sr-only", li)) s.hidden = !match;
   }
 
   function addCards(n) {

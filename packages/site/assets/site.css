@@ -474,6 +474,14 @@ h2 { font-size: 1.35rem; line-height: 1.25; margin: 2.25rem 0 0.5rem; }
 .chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0; padding: 0; list-style: none; }
 .chips li { padding: 0.1rem 0.55rem; border-left: 2px solid var(--accent); border-radius: 0 3px 3px 0; background: var(--chip-bg); font-size: 0.82rem; overflow-wrap: anywhere; }
 
+/* Topic tags. Tags in the patch are filled with the accent, carry a check mark and say
+   so to screen readers; the others are quiet dashed outlines. Never colour alone. */
+.tags { display: flex; flex-wrap: wrap; gap: 0.3rem; margin: 0.45rem 0 0; padding: 0; list-style: none; font-family: var(--mono); font-size: 0.74rem; }
+.tag { padding: 0 0.45rem; border: 1px dashed var(--border); border-radius: 999px; color: var(--muted); overflow-wrap: anywhere; }
+.tag-match { border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent); font-weight: 700; }
+.tag-mark { margin-right: 0.2rem; }
+.tag-mark[hidden] { display: none; }
+
 .score {
   display: none;
   margin: 0;
@@ -619,6 +627,7 @@ td:nth-child(2), td:nth-child(3) { white-space: nowrap; font-family: var(--mono)
 :root[data-density="list"] .note,
 :root[data-density="list"] .desc,
 :root[data-density="list"] .health,
+:root[data-density="list"] .tags,
 :root[data-density="list"] .meta-pushed { display: none; }
 :root[data-density="list"] .chips { grid-area: reason; flex-wrap: nowrap; min-width: 0; }
 :root[data-density="list"] .chips li { max-width: 100%; font-size: 0.78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -641,6 +650,8 @@ td:nth-child(2), td:nth-child(3) { white-space: nowrap; font-family: var(--mono)
   .density-opt[aria-checked="true"], .filter-chip[aria-pressed="true"] { background: Highlight; color: HighlightText; forced-color-adjust: none; }
   .ring-svg circle, .hill-line { stroke: CanvasText; }
   .ring-pith { fill: CanvasText; }
+  .tag { border: 1px dashed CanvasText; }
+  .tag-match { border: 2px solid CanvasText; }
 }
 
 @media (prefers-reduced-motion: no-preference) {

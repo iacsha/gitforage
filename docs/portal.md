@@ -11,7 +11,7 @@
 - **About:** what the portal looks for, how scoring works (with this portal's actual weights), how Keep and Skip work, and how to run your own.
 - **`feed.xml`:** an Atom 1.0 feed with an entry per listed repo.
 
-Each card shows the repo (linked to GitHub), its description, a source badge (**New**, **Rising**, **Live fork** or **Like your stars**), the top scoring reasons as chips, stars, language and last push, and Keep and Skip buttons. Keys: `j` and `k` move between cards, `Enter` opens one.
+Each card shows the repo (linked to GitHub), its description, a source badge (**New**, **Rising**, **Live fork** or **Like your stars**), the top scoring reasons as chips, its topics (the portal's own topics first, filled, with a check mark and "matches your patch" for screen readers; with a visitor's picks, their topics instead; the rest as quiet outlines), stars, language and last push, and Keep and Skip buttons. Keys: `j` and `k` move between cards, `Enter` opens one.
 
 The site is plain HTML and CSS with two small same-origin scripts (and, with [personalization](#pick-your-topics) on, a third on the Discover page). It uses system fonts, works on a phone, and loads nothing from other hosts unless you turn on analytics. With personalization on, a visitor's browser calls `api.github.com` only when they press "Use my GitHub stars".
 

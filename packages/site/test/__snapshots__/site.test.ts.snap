@@ -38,6 +38,7 @@ exports[`layout: density, fields, sort and filters build output snapshot: comfor
 <p class="note">Spotted in the fhir patch, a young specimen rooted in TypeScript. Close kin to the guide&#39;s favourite finds.</p>
 <p class="desc"><span class="desc-label">In the maintainer&#39;s words</span> A tool</p>
 <ul class="chips" aria-label="Why it made the basket"><li>~40 stars a month</li><li>your topic fhir</li></ul>
+<ul class="tags" aria-label="Topics on the label"><li class="tag tag-match"><span class="tag-mark" aria-hidden="true">✓</span>fhir<span class="sr-only">, matches your patch</span></li></ul>
 <ul class="meta">
 <li class="meta-stars">30 stars</li>
 <li class="meta-pushed">last growth <time datetime="2026-11-20T00:00:00.000Z">Nov 20, 2026</time></li>
@@ -60,6 +61,7 @@ exports[`layout: density, fields, sort and filters build output snapshot: comfor
 <p class="note">A year-old find from in the hl7 patch, rooted in TypeScript. Putting on growth: gaining stars fast.</p>
 <p class="desc"><span class="desc-label">In the maintainer&#39;s words</span> A tool</p>
 <ul class="chips" aria-label="Why it made the basket"><li>~90 stars a month lately</li></ul>
+<ul class="tags" aria-label="Topics on the label"><li class="tag tag-match"><span class="tag-mark" aria-hidden="true">✓</span>hl7<span class="sr-only">, matches your patch</span></li></ul>
 <ul class="meta">
 <li class="meta-stars">300 stars</li>
 <li class="meta-pushed">last growth <time datetime="2026-11-20T00:00:00.000Z">Nov 20, 2026</time></li>
@@ -82,6 +84,7 @@ exports[`layout: density, fields, sort and filters build output snapshot: comfor
 <p class="note">A young find from in the hl7 patch, rooted in TypeScript. Fresh from the seed bed.</p>
 <p class="desc"><span class="desc-label">In the maintainer&#39;s words</span> A tool</p>
 <ul class="chips" aria-label="Why it made the basket"><li>your topic hl7</li></ul>
+<ul class="tags" aria-label="Topics on the label"><li class="tag tag-match"><span class="tag-mark" aria-hidden="true">✓</span>hl7<span class="sr-only">, matches your patch</span></li><li class="tag"><span class="tag-mark" aria-hidden="true" hidden>✓</span>mllp<span class="sr-only" hidden>, matches your patch</span></li></ul>
 <ul class="meta">
 <li class="meta-stars">900 stars</li>
 <li class="meta-pushed">last growth <time datetime="2026-11-20T00:00:00.000Z">Nov 20, 2026</time></li>
@@ -136,6 +139,7 @@ exports[`layout: density, fields, sort and filters build output snapshot: compac
 <p class="note">Spotted in the fhir patch, a young specimen rooted in TypeScript. Close kin to the guide&#39;s favourite finds.</p>
 <p class="desc"><span class="desc-label">In the maintainer&#39;s words</span> A tool</p>
 <ul class="chips" aria-label="Why it made the basket"><li>~40 stars a month</li><li>your topic fhir</li></ul>
+<ul class="tags" aria-label="Topics on the label"><li class="tag tag-match"><span class="tag-mark" aria-hidden="true">✓</span>fhir<span class="sr-only">, matches your patch</span></li></ul>
 <ul class="meta">
 <li class="meta-stars">30 stars</li>
 <li class="meta-pushed">last growth <time datetime="2026-11-20T00:00:00.000Z">Nov 20, 2026</time></li>
@@ -158,6 +162,7 @@ exports[`layout: density, fields, sort and filters build output snapshot: compac
 <p class="note">A year-old find from in the hl7 patch, rooted in TypeScript. Putting on growth: gaining stars fast.</p>
 <p class="desc"><span class="desc-label">In the maintainer&#39;s words</span> A tool</p>
 <ul class="chips" aria-label="Why it made the basket"><li>~90 stars a month lately</li></ul>
+<ul class="tags" aria-label="Topics on the label"><li class="tag tag-match"><span class="tag-mark" aria-hidden="true">✓</span>hl7<span class="sr-only">, matches your patch</span></li></ul>
 <ul class="meta">
 <li class="meta-stars">300 stars</li>
 <li class="meta-pushed">last growth <time datetime="2026-11-20T00:00:00.000Z">Nov 20, 2026</time></li>
@@ -180,6 +185,7 @@ exports[`layout: density, fields, sort and filters build output snapshot: compac
 <p class="note">A young find from in the hl7 patch, rooted in TypeScript. Fresh from the seed bed.</p>
 <p class="desc"><span class="desc-label">In the maintainer&#39;s words</span> A tool</p>
 <ul class="chips" aria-label="Why it made the basket"><li>your topic hl7</li></ul>
+<ul class="tags" aria-label="Topics on the label"><li class="tag tag-match"><span class="tag-mark" aria-hidden="true">✓</span>hl7<span class="sr-only">, matches your patch</span></li><li class="tag"><span class="tag-mark" aria-hidden="true" hidden>✓</span>mllp<span class="sr-only" hidden>, matches your patch</span></li></ul>
 <ul class="meta">
 <li class="meta-stars">900 stars</li>
 <li class="meta-pushed">last growth <time datetime="2026-11-20T00:00:00.000Z">Nov 20, 2026</time></li>
@@ -234,6 +240,7 @@ exports[`layout: density, fields, sort and filters build output snapshot: list 1
 <p class="note">Spotted in the fhir patch, a young specimen rooted in TypeScript. Close kin to the guide&#39;s favourite finds.</p>
 <p class="desc"><span class="desc-label">In the maintainer&#39;s words</span> A tool</p>
 <ul class="chips" aria-label="Why it made the basket"><li>~40 stars a month</li><li>your topic fhir</li></ul>
+<ul class="tags" aria-label="Topics on the label"><li class="tag tag-match"><span class="tag-mark" aria-hidden="true">✓</span>fhir<span class="sr-only">, matches your patch</span></li></ul>
 <ul class="meta">
 <li class="meta-stars">30 stars</li>
 <li class="meta-pushed">last growth <time datetime="2026-11-20T00:00:00.000Z">Nov 20, 2026</time></li>
@@ -256,6 +263,7 @@ exports[`layout: density, fields, sort and filters build output snapshot: list 1
 <p class="note">A year-old find from in the hl7 patch, rooted in TypeScript. Putting on growth: gaining stars fast.</p>
 <p class="desc"><span class="desc-label">In the maintainer&#39;s words</span> A tool</p>
 <ul class="chips" aria-label="Why it made the basket"><li>~90 stars a month lately</li></ul>
+<ul class="tags" aria-label="Topics on the label"><li class="tag tag-match"><span class="tag-mark" aria-hidden="true">✓</span>hl7<span class="sr-only">, matches your patch</span></li></ul>
 <ul class="meta">
 <li class="meta-stars">300 stars</li>
 <li class="meta-pushed">last growth <time datetime="2026-11-20T00:00:00.000Z">Nov 20, 2026</time></li>
@@ -278,6 +286,7 @@ exports[`layout: density, fields, sort and filters build output snapshot: list 1
 <p class="note">A young find from in the hl7 patch, rooted in TypeScript. Fresh from the seed bed.</p>
 <p class="desc"><span class="desc-label">In the maintainer&#39;s words</span> A tool</p>
 <ul class="chips" aria-label="Why it made the basket"><li>your topic hl7</li></ul>
+<ul class="tags" aria-label="Topics on the label"><li class="tag tag-match"><span class="tag-mark" aria-hidden="true">✓</span>hl7<span class="sr-only">, matches your patch</span></li><li class="tag"><span class="tag-mark" aria-hidden="true" hidden>✓</span>mllp<span class="sr-only" hidden>, matches your patch</span></li></ul>
 <ul class="meta">
 <li class="meta-stars">900 stars</li>
 <li class="meta-pushed">last growth <time datetime="2026-11-20T00:00:00.000Z">Nov 20, 2026</time></li>
