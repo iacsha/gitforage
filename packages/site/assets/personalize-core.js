@@ -516,3 +516,110 @@ export function eventName(kind, value) {
   if (kind === "stars" && value === "used") return "pick-stars-used";
   return null;
 }
+
+// ---- Carry your patch: export and import --------------------------------------------
+//
+// Until accounts exist, a visitor can carry their picks and local marks to another
+// computer as a small JSON file. The file is untrusted when it comes back: it may have
+// been edited, or written by someone else. parsePatchFile accepts only the exact shape
+// writePatchFile makes, and rejects the whole file on anything else, so nothing is
+// ever half applied.
+
+/** The patch file's name, its kind marker and caps. */
+export const PATCH_FILE = "gitforage-patch.json";
+export const PATCH_KIND = "gitforage-patch";
+export const PATCH_LIMITS = { bytes: 65536 };
+const PATCH_KEYS = ["kind", "version", "exported", "topics", "pack", "marks"];
+const MARK_KEYS = ["mark", "topics", "language"];
+
+/** @param {Record<string, any>} o @param {string[]} keys @param {string[]} required */
+function exactKeys(o, keys, required) {
+  const have = Object.keys(o);
+  return have.every((k) => keys.indexOf(k) >= 0) && required.every((k) => have.indexOf(k) >= 0);
+}
+
+/**
+ * The patch file for a selection and the local marks.
+ * @param {Selection} sel @param {Marks} marks @param {number} now @returns {string}
+ */
+export function writePatchFile(sel, marks, now) {
+  /** @type {Record<string, Mark>} */
+  const m = {};
+  for (const k of Object.keys(marks).slice(-LIMITS.marks)) {
+    const x = marks[k];
+    m[k] = { mark: x.mark, topics: x.topics.slice(0, LIMITS.markTopics), language: x.language };
+  }
+  return JSON.stringify({ kind: PATCH_KIND, version: 1, exported: today(now), topics: sel.topics.slice(0, LIMITS.selected), pack: sel.pack, marks: m }, null, 2) + "\n";
+}
+
+/**
+ * @typedef {{ ok: true, selection: Selection, marks: Marks } | { ok: false, error: "size" | "json" | "shape" | "version" | "topics" | "pack" | "marks" | "empty" }} PatchResult
+ */
+
+/**
+ * Check an imported patch file against the catalog. Every topic must be a catalog
+ * topic, the pack a catalog pack, every mark a plain owner/repo with the exact mark
+ * shape. Any problem rejects the whole file.
+ * @param {unknown} text @param {Catalog} cat @returns {PatchResult}
+ */
+export function parsePatchFile(text, cat) {
+  if (typeof text !== "string" || text.length > PATCH_LIMITS.bytes) return { ok: false, error: "size" };
+  /** @type {unknown} */
+  let d;
+  try {
+    d = JSON.parse(text);
+  } catch (e) {
+    return { ok: false, error: "json" };
+  }
+  if (!isObj(d) || !exactKeys(d, PATCH_KEYS, PATCH_KEYS) || d.kind !== PATCH_KIND) return { ok: false, error: "shape" };
+  if (d.version !== 1) return { ok: false, error: "version" };
+  if (typeof d.exported !== "string" || !DAY_RE.test(d.exported)) return { ok: false, error: "shape" };
+  const allowed = new Set(cat.topics);
+  if (!Array.isArray(d.topics) || d.topics.length > LIMITS.selected) return { ok: false, error: "topics" };
+  /** @type {string[]} */
+  const topics = [];
+  for (const t of d.topics) {
+    if (!isTopic(t) || !allowed.has(t) || topics.indexOf(t) >= 0) return { ok: false, error: "topics" };
+    topics.push(t);
+  }
+  let pack = null;
+  if (d.pack !== null) {
+    const p = typeof d.pack === "string" && PACK_RE.test(d.pack) ? cat.packs.find((x) => x.id === d.pack) : undefined;
+    if (!p) return { ok: false, error: "pack" };
+    pack = p.id;
+  }
+  if (!isObj(d.marks)) return { ok: false, error: "marks" };
+  const keys = Object.keys(d.marks);
+  if (keys.length > LIMITS.marks) return { ok: false, error: "marks" };
+  /** @type {Marks} */
+  const marks = Object.create(null);
+  for (const k of keys) {
+    const m = d.marks[k];
+    if (!isFullName(k) || !isObj(m) || !exactKeys(m, MARK_KEYS, MARK_KEYS)) return { ok: false, error: "marks" };
+    if (m.mark !== "keep" && m.mark !== "skip") return { ok: false, error: "marks" };
+    if (!Array.isArray(m.topics) || m.topics.length > LIMITS.markTopics || !m.topics.every(isTopic)) return { ok: false, error: "marks" };
+    if (m.language !== null && (typeof m.language !== "string" || !LANGUAGE_RE.test(m.language))) return { ok: false, error: "marks" };
+    marks[k] = { mark: m.mark, topics: m.topics.slice(), language: m.language };
+  }
+  if (!topics.length && !keys.length) return { ok: false, error: "empty" };
+  return { ok: true, selection: { topics, pack: topics.length ? pack : null }, marks };
+}
+
+/** Local marks with imported ones laid over them (imported win), capped like writeMarks. */
+/** @param {Marks} current @param {Marks} imported @returns {Marks} */
+export function mergeMarks(current, imported) {
+  /** @type {Marks} */
+  const out = Object.create(null);
+  for (const k of Object.keys(current)) if (!(k in imported)) out[k] = current[k];
+  for (const k of Object.keys(imported)) out[k] = imported[k];
+  const keys = Object.keys(out);
+  for (const k of keys.slice(0, Math.max(0, keys.length - LIMITS.marks))) delete out[k];
+  return out;
+}
+
+/** A blob: link this page made itself (for the patch download), and nothing else. */
+/** @param {unknown} v @param {unknown} origin @returns {boolean} */
+export function isOwnBlobUrl(v, origin) {
+  return typeof v === "string" && typeof origin === "string" && /^https?:\/\/[A-Za-z0-9.-]+(?::\d{1,5})?$/.test(origin) &&
+    v.startsWith("blob:" + origin + "/") && /^[0-9a-fA-F-]{36}$/.test(v.slice(("blob:" + origin + "/").length));
+}

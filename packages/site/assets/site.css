@@ -697,7 +697,7 @@ td:nth-child(2), td:nth-child(3) { white-space: nowrap; font-family: var(--mono)
 .pick-body { overflow-y: auto; padding: 0.25rem 1.1rem 0.75rem; }
 .pick-section h3 { margin: 1rem 0 0.45rem; font-size: 1.05rem; }
 .pick-packs { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-.pick-stars { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.pick-stars, .pick-carry { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
 .pick-stars label, .pick-search label { font-weight: 600; font-size: 0.9rem; }
 .pick-stars input, .pick-search input {
   flex: 1 1 12rem;
@@ -722,7 +722,7 @@ td:nth-child(2), td:nth-child(3) { white-space: nowrap; font-family: var(--mono)
 .pick-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; padding: 0.75rem 1.1rem 0.9rem; border-top: 3px double var(--rule); }
 .pick-count { flex: 1 1 100%; margin: 0; color: var(--muted); font-size: 0.9rem; }
 .pick-foot button.btn { font: inherit; font-weight: 600; cursor: pointer; }
-.pick-stars .btn { font: inherit; font-weight: 600; cursor: pointer; }
+.pick-stars .btn, .pick-carry .btn { font: inherit; font-weight: 600; cursor: pointer; }
 .more .btn { font: inherit; font-weight: 600; cursor: pointer; }
 .pick-foot .btn-keep { order: -1; }
 

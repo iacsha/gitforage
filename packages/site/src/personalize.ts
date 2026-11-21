@@ -141,6 +141,16 @@ ${groups}
 <h3 id="pick-marks-title">Your marks in this browser</h3>
 <p class="pick-small"><span data-marks-count>No marks yet.</span> <button type="button" class="filter-clear" data-marks-clear>Clear my local marks</button></p>
 </section>
+<section class="pick-section" aria-labelledby="pick-carry-title">
+<h3 id="pick-carry-title">Carry your patch</h3>
+<p class="pick-small" id="pick-carry-note">Take your picked topics and marks to another computer as a small file. Nothing is uploaded: Export saves the file to your downloads, and Import reads it back in this browser.</p>
+<div class="pick-carry">
+<button type="button" class="btn" data-patch-export aria-describedby="pick-carry-note">Export</button>
+<button type="button" class="btn" data-patch-import aria-describedby="pick-carry-note">Import</button>
+<input type="file" class="sr-only" accept=".json,application/json" tabindex="-1" aria-hidden="true" data-patch-file>
+</div>
+<p class="pick-status" role="status" aria-live="polite" data-patch-status></p>
+</section>
 </div>
 <div class="pick-foot">
 <p class="pick-count" aria-live="polite" aria-atomic="true" data-pick-count></p>

@@ -183,6 +183,8 @@ describe("the Discover page with personalization", () => {
       "data-personal-more", "data-pick-dialog", "data-pick-cancel", "data-pack", "data-stars-user", "data-stars-go", "data-stars-status",
       "data-stars-cached", "data-stars-cached-text", "data-stars-reuse", "data-topic-search", "data-pick-group", "data-topic-row", "data-topic",
       "data-topic-none", "data-marks-count", "data-marks-clear", "data-pick-count", "data-pick-apply", "data-pick-none",
+      // Carry your patch (export and import): buttons, the file input and its status line, no values.
+      "data-patch-export", "data-patch-import", "data-patch-file", "data-patch-status",
     ]);
     for (const [, n, v] of names) {
       expect([n, ALLOWED.has(n)]).toEqual([n, true]);
@@ -228,7 +230,8 @@ describe("dangerous sinks in the portal scripts", () => {
     expect(js).toContain('if (!SVG_ATTRS.has(k)) throw new Error("svg attribute not allowed: " + k);');
     expect(js).toContain('if (tag !== "svg" && tag !== "circle") throw new Error("svg tag not allowed: " + tag);');
     expect(js).toContain('&& !NUM_RE.test(v)) throw new Error("bad ring number");');
-    expect(js).toContain('if (name === "href" && !core.SAFE_HREF_RE.test(v)) throw new Error("link not allowed");');
+    expect(js).toContain('if (name === "href" && !core.SAFE_HREF_RE.test(v) && !core.isOwnBlobUrl(v, window.location.origin)) throw new Error("link not allowed");');
+    expect(js).toContain('if (name === "download" && v !== core.PATCH_FILE) throw new Error("download name not allowed");');
     expect(js).not.toMatch(/\.(href|src|action)\s*=/);
     expect(js).not.toMatch(/querySelector(All)?\([^)]*\+/);
     const uses = js.split("window.localStorage").length - 1;
@@ -417,5 +420,90 @@ describe("personalize-core.js: ranking", () => {
     expect(core.formatDate("<x>")).toBe("");
     expect(core.numAttr(Number.NaN)).toBe("0");
     expect(core.numAttr(1e300)).toBe("0");
+  });
+});
+
+describe("personalize-core.js: carry your patch (export and import)", () => {
+  const cat = clientCatalog([item("a/one", ["hl7"], 1)]);
+  const NOWMS = Date.parse(NOW);
+  const good = () => JSON.parse(core.writePatchFile({ topics: ["hl7", "fhir"], pack: "health" }, { "a/one": { mark: "keep", topics: ["hl7"], language: "Go" } }, NOWMS));
+  const parse = (v: unknown) => core.parsePatchFile(typeof v === "string" ? v : JSON.stringify(v), cat);
+
+  test("export round-trips through import", () => {
+    const text = core.writePatchFile({ topics: ["hl7", "fhir"], pack: "health" }, { "a/one": { mark: "skip", topics: ["hl7"], language: null } }, NOWMS);
+    expect(JSON.parse(text)).toEqual({ kind: "gitforage-patch", version: 1, exported: "2026-11-22", topics: ["hl7", "fhir"], pack: "health", marks: { "a/one": { mark: "skip", topics: ["hl7"], language: null } } });
+    const r = core.parsePatchFile(text, cat);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.selection).toEqual({ topics: ["hl7", "fhir"], pack: "health" });
+      expect(r.marks["a/one"]).toEqual({ mark: "skip", topics: ["hl7"], language: null });
+    }
+    expect(core.PATCH_FILE).toBe("gitforage-patch.json");
+  });
+
+  test("oversized, non-JSON and wrong-shape files are rejected whole", () => {
+    expect(parse("x".repeat(65537))).toEqual({ ok: false, error: "size" });
+    expect(parse(JSON.stringify({ ...good(), pad: "x".repeat(70000) }))).toEqual({ ok: false, error: "size" });
+    expect(parse("{not json")).toEqual({ ok: false, error: "json" });
+    expect(parse("null")).toEqual({ ok: false, error: "shape" });
+    expect(core.parsePatchFile(42 as unknown as string, cat)).toEqual({ ok: false, error: "size" });
+    for (const bad of [[], '"patch"', 1, { ...good(), extra: 1 }, { ...good(), kind: "other" }, { ...good(), exported: "yesterday" }, (() => { const g = good(); delete g.marks; return g; })()]) {
+      expect([bad, parse(bad)]).toEqual([bad, { ok: false, error: "shape" }]);
+    }
+    expect(parse({ ...good(), version: 2 })).toEqual({ ok: false, error: "version" });
+    expect(parse({ ...good(), version: "1" })).toEqual({ ok: false, error: "version" });
+  });
+
+  test("topics must be catalog topics, unique and capped; the pack must exist", () => {
+    for (const topics of [["hl7", "iptv"], ["HL7"], ["<script>"], ["hl7", "hl7"], "hl7", [1], Array.from({ length: 41 }, (_, i) => `t${i}`)]) {
+      expect([topics, parse({ ...good(), topics })]).toEqual([topics, { ok: false, error: "topics" }]);
+    }
+    for (const pack of ["nope", "../x", 3, ""]) expect(parse({ ...good(), pack })).toEqual({ ok: false, error: "pack" });
+    const noPack = parse({ ...good(), pack: null });
+    expect(noPack.ok && noPack.selection.pack).toBe(null);
+  });
+
+  test("marks must be plain owner/repo names with the exact mark shape, at most 500", () => {
+    const mk = (marks: unknown) => parse({ ...good(), marks });
+    for (const marks of [
+      [], "x",
+      { "../etc": { mark: "keep", topics: [], language: null } },
+      { "a/b/c": { mark: "keep", topics: [], language: null } },
+      { "a/..": { mark: "keep", topics: [], language: null } },
+      { "a/one": { mark: "love", topics: [], language: null } },
+      { "a/one": { mark: "keep", topics: ["<b>"], language: null } },
+      { "a/one": { mark: "keep", topics: [], language: "<img>" } },
+      { "a/one": { mark: "keep", topics: [], language: null, html: "<script>" } },
+      { "a/one": { mark: "keep", topics: [] } },
+      { "a/one": { mark: "keep", topics: Array.from({ length: 13 }, (_, i) => `t${i}`), language: null } },
+      Object.fromEntries(Array.from({ length: 501 }, (_, i) => [`o/r${i}`, { mark: "keep", topics: [], language: null }])),
+    ]) expect(mk(marks)).toEqual({ ok: false, error: "marks" });
+    expect(mk(Object.fromEntries(Array.from({ length: 500 }, (_, i) => [`o/r${i}`, { mark: "keep", topics: [], language: null }]))).ok).toBe(true);
+    expect(parse({ ...good(), topics: [], pack: null, marks: {} })).toEqual({ ok: false, error: "empty" });
+  });
+
+  test("a hostile __proto__ key cannot pollute objects", () => {
+    const text = `{"kind":"gitforage-patch","version":1,"exported":"2026-11-22","topics":["hl7"],"pack":null,"marks":{"__proto__":{"mark":"keep","topics":[],"language":null}}}`;
+    expect(core.parsePatchFile(text, cat)).toEqual({ ok: false, error: "marks" });
+    expect(({} as Record<string, unknown>).mark).toBeUndefined();
+  });
+
+  test("imported marks lay over local ones and stay capped", () => {
+    const local = { "a/one": { mark: "keep" as const, topics: ["hl7"], language: null }, "b/two": { mark: "keep" as const, topics: [], language: null } };
+    const merged = core.mergeMarks(local, { "a/one": { mark: "skip", topics: ["hl7"], language: null } });
+    expect(Object.keys(merged).sort()).toEqual(["a/one", "b/two"]);
+    expect(merged["a/one"].mark).toBe("skip");
+    const many = Object.fromEntries(Array.from({ length: 500 }, (_, i) => [`o/r${i}`, { mark: "keep" as const, topics: [], language: null }]));
+    expect(Object.keys(core.mergeMarks(local, many)).length).toBe(500);
+  });
+
+  test("the download link may only be a blob: URL this page made", () => {
+    const origin = "https://gitforage.dev";
+    expect(core.isOwnBlobUrl("blob:https://gitforage.dev/0b5a8c1e-2f3d-4a5b-9c6d-7e8f9a0b1c2d", origin)).toBe(true);
+    for (const bad of ["blob:https://evil.example/0b5a8c1e-2f3d-4a5b-9c6d-7e8f9a0b1c2d", "javascript:alert(1)", "data:application/json,{}",
+      "blob:https://gitforage.dev/../x", "blob:https://gitforage.dev/0b5a8c1e-2f3d-4a5b-9c6d-7e8f9a0b1c2d#x", "blob:https://gitforage.dev.evil.example/0b5a8c1e-2f3d-4a5b-9c6d-7e8f9a0b1c2d"]) {
+      expect([bad, core.isOwnBlobUrl(bad, origin)]).toEqual([bad, false]);
+    }
+    expect(core.isOwnBlobUrl("blob:null/0b5a8c1e-2f3d-4a5b-9c6d-7e8f9a0b1c2d", "null")).toBe(false);
   });
 });

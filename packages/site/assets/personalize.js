@@ -24,7 +24,7 @@ const PAGE = 60;
 const ATTRS = new Set([
   "class", "id", "href", "title", "datetime", "aria-label", "aria-labelledby", "aria-pressed", "type", "open",
   "data-lang", "data-lang-match", "data-sources", "data-topics", "data-score", "data-stars", "data-rank", "data-repo",
-  "data-card", "data-local-marks", "data-local-mark", "data-local-hidden",
+  "data-card", "data-local-marks", "data-local-mark", "data-local-hidden", "download",
 ]);
 const TAGS = new Set(["li", "article", "div", "h2", "a", "span", "p", "ul", "time", "button"]);
 const BADGES = {
@@ -60,7 +60,8 @@ function save(key, value) {
 function setAttr(node, name, value) {
   if (!ATTRS.has(name)) throw new Error("attribute not allowed: " + name);
   const v = String(value);
-  if (name === "href" && !core.SAFE_HREF_RE.test(v)) throw new Error("link not allowed");
+  if (name === "href" && !core.SAFE_HREF_RE.test(v) && !core.isOwnBlobUrl(v, window.location.origin)) throw new Error("link not allowed");
+  if (name === "download" && v !== core.PATCH_FILE) throw new Error("download name not allowed");
   node.setAttribute(name, v);
 }
 
@@ -452,6 +453,7 @@ function init() {
     paintMarksCount();
     updateCount();
     starsStatus.textContent = "";
+    if (patchStatus) patchStatus.textContent = "";
     if (typeof dialog.showModal === "function") dialog.showModal();
     else setAttr(dialog, "open", "");
     loadCatalog().then(function () { updateCount(); paintCached(); }, function () {
@@ -470,7 +472,7 @@ function init() {
   // Keep Tab inside the dialog (showModal makes the page inert too; this covers older browsers).
   dialog.addEventListener("keydown", function (e) {
     if (e.key !== "Tab") return;
-    const f = all("button, input, a[href]", dialog).filter(function (x) { return !x.disabled && x.getClientRects().length > 0; });
+    const f = all("button, input, a[href]", dialog).filter(function (x) { return !x.disabled && x.tabIndex >= 0 && x.getClientRects().length > 0; });
     if (!f.length) return;
     const first = f[0], last = f[f.length - 1];
     if (e.shiftKey && document.activeElement === first) { last.focus(); e.preventDefault(); }
@@ -623,6 +625,74 @@ function init() {
     updateCount();
     if (!personal.hidden) renderPersonal();
     announce("Local marks cleared.");
+  });
+
+  // ---- Carry your patch: Export and Import ------------------------------------------
+
+  const exportBtn = q("[data-patch-export]");
+  const importBtn = q("[data-patch-import]");
+  const fileInput = q("[data-patch-file]");
+  const patchStatus = q("[data-patch-status]");
+
+  const PATCH_ERRORS = {
+    size: "That file is too big to be a patch file (over 64 KB). Nothing was changed.",
+    json: "That file is not a patch file this page can read. Nothing was changed.",
+    shape: "That file is not a gitforage patch file. Nothing was changed.",
+    version: "That patch file comes from a newer gitforage. Nothing was changed.",
+    topics: "That patch file names topics this portal does not forage. Nothing was changed.",
+    pack: "That patch file names a starter pack this portal does not have. Nothing was changed.",
+    marks: "Some marks in that patch file are not well formed. Nothing was changed.",
+    empty: "That patch file holds no topics and no marks. Nothing was changed.",
+    read: "That file could not be read. Nothing was changed.",
+  };
+
+  exportBtn.addEventListener("click", function () {
+    const sel = cat ? core.cleanSelection(checked(), pendingPack, cat) : applied;
+    const text = core.writePatchFile(sel, marks, Date.now());
+    let url = null;
+    try {
+      url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+      const a = el("a", { href: url, download: core.PATCH_FILE });
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      patchStatus.textContent = "Saved " + core.PATCH_FILE + " with " + plural(sel.topics.length, "topic") + " and " + plural(Object.keys(marks).length, "mark") + ".";
+    } catch (e) {
+      patchStatus.textContent = "This browser would not save the file.";
+    }
+    if (url) {
+      const u = url;
+      setTimeout(function () { URL.revokeObjectURL(u); }, 10000);
+    }
+  });
+  importBtn.addEventListener("click", function () {
+    fileInput.value = "";
+    fileInput.click();
+  });
+  fileInput.addEventListener("change", function () {
+    const file = fileInput.files && fileInput.files[0];
+    if (!file) return;
+    if (file.size > core.PATCH_LIMITS.bytes) { patchStatus.textContent = PATCH_ERRORS.size; return; }
+    patchStatus.textContent = "Reading the patch file…";
+    Promise.all([file.text(), loadCatalog()]).then(function (got) {
+      const r = core.parsePatchFile(got[0], got[1]);
+      if (!r.ok) { patchStatus.textContent = PATCH_ERRORS[r.error] || PATCH_ERRORS.read; return; }
+      marks = core.mergeMarks(marks, r.marks);
+      save(KEYS.marks, Object.keys(marks).length ? core.writeMarks(marks) : null);
+      for (const li of all("[data-repo]")) paintMarks(li);
+      paintMarksCount();
+      if (r.selection.topics.length) {
+        setChecks(r.selection.topics);
+        pendingPack = r.selection.pack;
+        paintPacks();
+      }
+      updateCount();
+      if (!personal.hidden) renderPersonal();
+      patchStatus.textContent = "Imported " + plural(r.selection.topics.length, "topic") + " and " + plural(Object.keys(r.marks).length, "mark") +
+        (r.selection.topics.length ? ". Press Show to see them." : ".");
+    }, function () {
+      patchStatus.textContent = PATCH_ERRORS.read;
+    });
   });
 
   // ---- The bar: Reset, Copy link, Show more ----------------------------------------
